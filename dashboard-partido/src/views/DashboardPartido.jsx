@@ -2,22 +2,16 @@ import { useState, useEffect } from 'react';
 import {
   Box, Flex, Icon, Text, Button, Grid, SimpleGrid,
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  useDisclosure
+  useDisclosure, VStack
 } from '@chakra-ui/react';
 import { FaBars, FaPause } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 
 const DashboardPartido = () => {
-  const [jugadores, setJugadores] = useState([
-    { id: 1, dorsal: 7, nombre: "Pepe" },
-    { id: 2, dorsal: 10, nombre: "Luis" },
-    { id: 3, dorsal: 12, nombre: "Juan" },
-    { id: 4, dorsal: 4, nombre: "Carlos" },
-    { id: 5, dorsal: 11, nombre: "Pedro" },
-    { id: 6, dorsal: 6, nombre: "Mario" },
-    { id: 7, dorsal: 5, nombre: "Sergio" },
-    { id: 8, dorsal: 8, nombre: "Hugo" }
-  ]);
+  const [jugadores, setJugadores] = useState([]);
+  const [acciones, setAcciones] = useState([]);
+  const [accionesFiltradas, setAccionesFiltradas] = useState([]);
+  const [accionesRecientes, setAccionesRecientes] = useState([]);
   const [jugadorSeleccionado, setJugadorSeleccionado] = useState(null);
   const [faseSeleccionada, setFaseSeleccionada] = useState("Ataque Posicional");
   const [partidoIniciado, setPartidoIniciado] = useState(false);
@@ -30,6 +24,7 @@ const DashboardPartido = () => {
   const [golesLocal, setGolesLocal] = useState(0);
   const [golesVisitante, setGolesVisitante] = useState(0);
   const [equipoRivalNombre, setEquipoRivalNombre] = useState("");
+  const [nombreEquipoLocal, setNombreEquipoLocal] = useState("MiEquipo");
   const [fasesJuego, setFasesJuego] = useState([]);
 
   useEffect(() => {
@@ -52,25 +47,67 @@ const DashboardPartido = () => {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+
     fetch("https://myhandstats.onrender.com/fases_juego", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setFasesJuego(data);
-        else console.error("Respuesta inesperada:", data);
-      })
-      .catch((err) => console.error("Error al cargar fases del juego:", err));
+      });
+
+    fetch("https://myhandstats.onrender.com/acciones", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setAcciones(data);
+      });
+
+    fetch("https://myhandstats.onrender.com/equipo/27", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.nombre) setNombreEquipoLocal(data.nombre);
+      });
+
+    fetch("https://myhandstats.onrender.com/equipo/27/jugadores", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setJugadores(data);
+      });
   }, []);
 
+  useEffect(() => {
+    const tiposPorFase = {
+      "ofensiva": ["goles", "lanzamiento", "perdida"],
+      "defensiva": ["recuperacion", "amonestacion", "gol_en_contra"],
+      "contra_ataque": ["goles", "lanzamiento", "perdida"],
+      "repliegue": ["gol_en_contra", "amonestacion"],
+      "superioridad_ofensiva": ["goles", "lanzamiento"],
+      "superioridad_defensiva": ["recuperacion", "gol_en_contra"],
+      "inferioridad_ofensiva": ["lanzamiento", "perdida"],
+      "inferioridad_defensiva\n": ["gol_en_contra", "amonestacion"]
+    };
+    const tipos = tiposPorFase[faseSeleccionada] || [];
+    const filtradas = acciones.filter(acc => tipos.includes(acc.tipo_accion));
+    setAccionesFiltradas(filtradas);
+  }, [faseSeleccionada, acciones]);
 
   const handleGuardarGol = () => {
     if (!zonaDisparo || (modalTipo === "gol" && !zonaLanzador)) {
       Swal.fire("Faltan datos", "Debes seleccionar una zona de disparo y lanzador", "warning");
       return;
     }
+    const nuevaAccion = {
+      jugador: jugadorSeleccionado?.nombre || "Sin jugador",
+      tipo: "Gol",
+      zona: zonaDisparo
+    };
+    setAccionesRecientes(prev => [nuevaAccion, ...prev.slice(0, 4)]);
     setGolesLocal((prev) => prev + 1);
     onClose();
     setZonaDisparo(null);
@@ -79,14 +116,19 @@ const DashboardPartido = () => {
   };
 
   const handleAccion = (accion) => {
-    if (accion !== "Gol en Contra" && !jugadorSeleccionado) {
+    if (accion.tipo_accion !== "gol_en_contra" && !jugadorSeleccionado) {
       Swal.fire("Jugador no seleccionado", "Selecciona un jugador para registrar esta acción", "error");
       return;
     }
-    if (accion.tipo) {
-      setModalTipo(accion.tipo);
+    if (accion.tipo_accion === "goles") {
+      setModalTipo("gol");
       onOpen();
     } else {
+      const nuevaAccion = {
+        jugador: jugadorSeleccionado?.nombre || "Sin jugador",
+        tipo: accion.nombre
+      };
+      setAccionesRecientes(prev => [nuevaAccion, ...prev.slice(0, 4)]);
       console.log("Acción ejecutada:", accion);
     }
   };
@@ -117,203 +159,214 @@ const DashboardPartido = () => {
     }
   };
 
+  const acortarNombre = (nombre) => nombre.slice(0, 6);
+
   if (!partidoIniciado) {
-    return (
-      <Box p={8} minH="100vh" bg="white" textAlign="center">
-        <Text fontSize="xl" mb={4} fontWeight="bold">Comenzar nuevo partido</Text>
-        <Button
-          bg="#014C4C"
-          color="white"
-          _hover={{ bg: '#016666' }}
-          onClick={async () => {
-            const { value: nombreRival } = await Swal.fire({
-              title: 'Nombre del equipo rival',
-              input: 'text',
-              inputPlaceholder: 'Ej. Atlético Madrid',
-              confirmButtonText: 'Comenzar',
-              showCancelButton: true,
-              inputValidator: (value) => {
-                if (!value) {
-                  return 'Por favor, escribe un nombre';
-                }
-                return null;
-              }
-            });
-
-            if (nombreRival) {
-              setEquipoRivalNombre(nombreRival);
-              setPartidoIniciado(true);
+  return (
+    <Box p={8} minH="100vh" bg="white" textAlign="center">
+      <Text fontSize="xl" mb={4} fontWeight="bold">Comenzar nuevo partido</Text>
+      <Button
+        bg="#014C4C"
+        color="white"
+        _hover={{ bg: '#016666' }}
+        onClick={async () => {
+          const { value: nombreRival } = await Swal.fire({
+            title: 'Nombre del equipo rival',
+            input: 'text',
+            inputPlaceholder: 'Ej. Atlético Madrid',
+            confirmButtonText: 'Comenzar',
+            showCancelButton: true,
+            inputValidator: (value) => {
+              if (!value) return 'Por favor, escribe un nombre';
             }
-          }}
-        >
-          Comenzar Partido
-        </Button>
-      </Box>
-    );
-  }
+          });
 
-return (
-  <Box p={4} minH="100vh" bg="white">
-    <Flex align="center" justify="space-between" mb={6}>
-      <Icon as={FaBars} boxSize={5} />
-      <Flex align="center" gap={3}>
-        <Text fontSize="2xl" color="blue.600" fontWeight="bold">{golesLocal}</Text>
-        <Text fontSize="2xl" color="red.500" fontWeight="bold">:</Text>
-        <Box textAlign="center">
-          <Text fontSize="sm" color="gray.600" mt={-2}>{equipoRivalNombre}</Text>
+          if (nombreRival) {
+            setEquipoRivalNombre(nombreRival);
+            setPartidoIniciado(true);
+          }
+        }}
+      >
+        Comenzar Partido
+      </Button>
+    </Box>
+  );
+}
+
+  return (
+    <Box p={4} minH="100vh" bg="white">
+      <Flex align="center" justify="space-between" mb={4}>
+        <Icon as={FaBars} boxSize={5} />
+        <Text fontSize="sm" noOfLines={1}>
+          {acortarNombre(nombreEquipoLocal)} vs {acortarNombre(equipoRivalNombre)}
+        </Text>
+        <Flex align="center" gap={2}>
+          <Text fontSize="2xl" color="blue.600" fontWeight="bold">{golesLocal}</Text>
+          <Text fontSize="2xl" color="red.500" fontWeight="bold">:</Text>
           <Text fontSize="2xl" color="red.500" fontWeight="bold">{golesVisitante}</Text>
-        </Box>
-        <Flex
-          align="center"
-          justify="center"
-          boxSize={8}
-          bg="#014C4C"
-          borderRadius="full"
-          color="white"
-          cursor="pointer"
-          onClick={() => setActivo((prev) => !prev)}
-        >
+        </Flex>
+        <Flex align="center" justify="center" boxSize={8} bg="#014C4C" borderRadius="full" color="white" cursor="pointer" onClick={() => setActivo(prev => !prev)}>
           <Icon as={FaPause} fontSize="xs" />
         </Flex>
         <Flex direction="column" align="center">
           <Text fontSize="sm">1º Parte</Text>
           <Text fontSize="xl" fontWeight="bold">{formatoTiempo()}</Text>
         </Flex>
+        <Button variant="outline" size="sm" onClick={handleFinalizarParte}>Acabar Parte</Button>
       </Flex>
-      <Button variant="outline" size="sm" onClick={handleFinalizarParte}>Acabar Parte</Button>
-    </Flex>
 
-    <Flex flexWrap="wrap" gap={6}>
-      <Box minW="200px">
-        <Text fontWeight="bold" mb={2}>Timeouts</Text>
-        <Flex gap={2} mb={4}>
-          {[1, 2, 3].map((num) => (
-            <Button key={num} borderRadius="full" bg="#014C4C" color="white" size="sm">{num}</Button>
-          ))}
-        </Flex>
-        <Text fontWeight="bold" mb={1}>Portero</Text>
-        <Button colorScheme="teal" size="sm" mb={4}>1 Pepe</Button>
-        <Text fontWeight="bold" mb={1}>En Pista</Text>
-        <SimpleGrid columns={3} spacing={2} mb={4}>
-          {jugadores.slice(0, 6).map((jugador) => (
-            <Button key={jugador.id} size="sm" bg="#014C4C" color="white" onClick={() => setJugadorSeleccionado(jugador)}>
-              {jugador.dorsal} {jugador.nombre}
-            </Button>
-          ))}
-        </SimpleGrid>
-        <Text fontWeight="bold" mb={1}>Banquillo</Text>
-        <SimpleGrid columns={3} spacing={2}>
-          {jugadores.slice(6).map((jugador) => (
-            <Button key={jugador.id} size="sm" bg="#014C4C" color="white" onClick={() => setJugadorSeleccionado(jugador)}>
-              {jugador.dorsal} {jugador.nombre}
-            </Button>
-          ))}
-        </SimpleGrid>
-      </Box>
-
-      <Box flex="1">
-        <Text fontWeight="bold" mb={2}>Fase del Juego</Text>
-        <Flex wrap="wrap" gap={2} mb={4}>
-          {fasesJuego.map((fase) => (
-            <Button
-              key={fase.id}
-              size="sm"
-              variant={faseSeleccionada === fase.nombre ? "solid" : "outline"}
-              colorScheme={faseSeleccionada === fase.nombre ? "teal" : "gray"}
-              onClick={() => setFaseSeleccionada(fase.nombre)}
-            >
-              {fase.nombre}
-            </Button>
-          ))}
-        </Flex>
-
-        <Text fontWeight="bold" mb={2}>Acciones</Text>
-        <SimpleGrid columns={[2, 3, 4]} spacing={3} mb={6}>
-          {[{ label: 'Gol', tipo: 'gol' }, { label: 'Gol 7M', tipo: 'gol7m' },
-            'Parada', 'Parada 7M', 'Tiro Puerta', 'Tiro Fuera', 'Falta', 'Falta 7M',
-            'Gol en Contra', 'Pérdida', 'Amarilla', 'Roja', 'Azul', '2 Minutos', 'Recupe.'
-          ].map((accion) =>
-            typeof accion === 'string' ? (
-              <Button key={accion} padding="16dp" variant="outline" onClick={() => handleAccion(accion)}>{accion}</Button>
-            ) : (
+      <Flex flexWrap="wrap" gap={6}>
+        <Box minW="200px">
+          <Text fontWeight="bold" mb={2}>Timeouts</Text>
+          <Flex gap={2} mb={4}>
+            {[1, 2, 3].map((num) => (
+              <Button key={num} borderRadius="full" bg="#014C4C" color="white" size="sm">{num}</Button>
+            ))}
+          </Flex>
+          <Text fontWeight="bold" mb={1}>Portero</Text>
+          <Button colorScheme="teal" size="sm" mb={4}>1 Pepe</Button>
+          <Text fontWeight="bold" mb={1}>En Pista</Text>
+          <SimpleGrid columns={3} spacing={2} mb={4}>
+            {jugadores.map((jugador) => (
               <Button
-                key={accion.label}
+                key={jugador.id}
+                size="sm"
+                bg="#014C4C"
+                color="white"
+                onClick={() => setJugadorSeleccionado(jugador)}
+                px={2}
+                fontSize="xs"
+                textAlign="center"
+                whiteSpace="normal"
+              >
+                {jugador.dorsal} <br /> {jugador.nombre}
+              </Button>
+            ))}
+          </SimpleGrid>
+
+          {/* Log de acciones abajo a la izquierda */}
+          <Text fontWeight="bold" mt={6} mb={2}>Últimas Acciones</Text>
+          <VStack align="stretch" spacing={1}>
+            {accionesRecientes.map((accion, i) => (
+              <Flex key={i} justify="space-between" align="center" p={2} borderWidth={1} borderRadius="md" bg="gray.50">
+                <Text fontSize="sm">
+                  <strong>{accion.tipo}</strong> - {accion.jugador}
+                </Text>
+                <Button size="xs" colorScheme="red" onClick={() => {
+                  setAccionesRecientes(prev => prev.filter((_, index) => index !== i));
+                }}>
+                  X
+                </Button>
+              </Flex>
+            ))}
+          </VStack>
+
+        </Box>
+
+        <Box flex="1">
+          <Text fontWeight="bold" mb={2}>Fase del Juego</Text>
+          <Flex wrap="wrap" gap={2} mb={4}>
+            {fasesJuego.map((fase) => (
+              <Button
+                key={fase.id}
+                size="sm"
+                variant={faseSeleccionada === fase.nombre ? "solid" : "outline"}
+                colorScheme={faseSeleccionada === fase.nombre ? "teal" : "gray"}
+                onClick={() => setFaseSeleccionada(fase.nombre)}
+              >
+                {fase.nombre}
+              </Button>
+            ))}
+          </Flex>
+
+          <Text fontWeight="bold" mb={2}>Acciones</Text>
+          <SimpleGrid columns={[2, 3, 4]} spacingX={3} spacingY={4} mb={6}>
+            {accionesFiltradas.map((accion) => (
+              <Button
+                key={accion.id}
                 size="sm"
                 variant="outline"
                 onClick={() => handleAccion(accion)}
+                whiteSpace="normal"
+                wordBreak="break-word"
+                textAlign="center"
+                px={2}
+                h="50px"
+                fontSize="sm"
+                lineHeight="1.2"
               >
-                {accion.label}
-              </Button>
-            )
-          )}
-        </SimpleGrid>
-        <Flex justify="flex-end">
-          <Button bg="#014C4C" color="white" _hover={{ bg: '#016666' }} onClick={handleFinalizarPartido}>
-            Finalizar Partido
-          </Button>
-        </Flex>
-      </Box>
-    </Flex>
-
-    <Modal isOpen={isOpen} onClose={onClose} size="xl" isCentered>
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader textAlign="center" bg="#014C4C" color="white">
-          Posición del Lanzamiento
-        </ModalHeader>
-        <ModalBody>
-          <Grid templateColumns="repeat(3, 1fr)" gap={2} mb={6} textAlign="center">
-            {Array.from({ length: 9 }, (_, i) => (
-              <Button
-                key={i + 1}
-                onClick={() => setZonaDisparo(i + 1)}
-                variant={zonaDisparo === i + 1 ? "solid" : "outline"}
-                colorScheme="teal"
-              >
-                {i + 1}
+                {accion.nombre.replaceAll("_", " ")}
               </Button>
             ))}
-          </Grid>
-          {modalTipo === "gol" && (
-            <>
-              <Text textAlign="center" fontWeight="bold" mb={2}>Posición del Lanzador</Text>
-              <Grid templateColumns="repeat(5, 1fr)" gap={2} mb={2}>
-                {["Ala Izquierda", "Izquierda 6M", "Centro 6M", "Derecha 6M", "Ala Derecha"].map((pos) => (
-                  <Button
-                    key={pos}
-                    onClick={() => setZonaLanzador(pos)}
-                    variant={zonaLanzador === pos ? "solid" : "outline"}
-                    colorScheme="teal"
-                    size="sm"
-                  >
-                    {pos}
-                  </Button>
-                ))}
-              </Grid>
-              <Grid templateColumns="repeat(3, 1fr)" gap={2}>
-                {["Izquierda 9M", "Centro 9M", "Derecha 9M", "Medio Campo", "Campo a Campo"].map((pos) => (
-                  <Button
-                    key={pos}
-                    onClick={() => setZonaLanzador(pos)}
-                    variant={zonaLanzador === pos ? "solid" : "outline"}
-                    colorScheme="teal"
-                    size="sm"
-                  >
-                    {pos}
-                  </Button>
-                ))}
-              </Grid>
-            </>
-          )}
-        </ModalBody>
-        <ModalFooter justifyContent="space-between">
-          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
-          <Button colorScheme="teal" onClick={handleGuardarGol}>Guardar</Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
-  </Box>
-);
-}
+          </SimpleGrid>
+
+          <Flex justify="flex-end">
+            <Button bg="#014C4C" color="white" _hover={{ bg: '#016666' }} onClick={handleFinalizarPartido}>
+              Finalizar Partido
+            </Button>
+          </Flex>
+        </Box>
+      </Flex>
+
+      <Modal isOpen={isOpen} onClose={onClose} size="xl" isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader textAlign="center" bg="#014C4C" color="white">
+            Posición del Lanzamiento
+          </ModalHeader>
+          <ModalBody>
+            <Grid templateColumns="repeat(3, 1fr)" gap={2} mb={6} textAlign="center">
+              {Array.from({ length: 9 }, (_, i) => (
+                <Button
+                  key={i + 1}
+                  onClick={() => setZonaDisparo(i + 1)}
+                  variant={zonaDisparo === i + 1 ? "solid" : "outline"}
+                  colorScheme="teal"
+                >
+                  {i + 1}
+                </Button>
+              ))}
+            </Grid>
+            {modalTipo === "gol" && (
+              <>
+                <Text textAlign="center" fontWeight="bold" mb={2}>Posición del Lanzador</Text>
+                <Grid templateColumns="repeat(5, 1fr)" gap={2} mb={2}>
+                  {["Ala Izquierda", "Izquierda 6M", "Centro 6M", "Derecha 6M", "Ala Derecha"].map((pos) => (
+                    <Button
+                      key={pos}
+                      onClick={() => setZonaLanzador(pos)}
+                      variant={zonaLanzador === pos ? "solid" : "outline"}
+                      colorScheme="teal"
+                      size="sm"
+                    >
+                      {pos}
+                    </Button>
+                  ))}
+                </Grid>
+                <Grid templateColumns="repeat(3, 1fr)" gap={2}>
+                  {["Izquierda 9M", "Centro 9M", "Derecha 9M", "Medio Campo", "Campo a Campo"].map((pos) => (
+                    <Button
+                      key={pos}
+                      onClick={() => setZonaLanzador(pos)}
+                      variant={zonaLanzador === pos ? "solid" : "outline"}
+                      colorScheme="teal"
+                      size="sm"
+                    >
+                      {pos}
+                    </Button>
+                  ))}
+                </Grid>
+              </>
+            )}
+          </ModalBody>
+          <ModalFooter justifyContent="space-between">
+            <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+            <Button colorScheme="teal" onClick={handleGuardarGol}>Guardar</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </Box>
+  );
+};
 
 export default DashboardPartido;

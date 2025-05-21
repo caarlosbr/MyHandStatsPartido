@@ -9,7 +9,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<Login />} />
         <Route path="/registrar" element={<Registrar />} />
         <Route path="/nuevo-partido" element={<DashboardPartido />} />
         <Route path="/jugadores" element={<Jugadores />} />

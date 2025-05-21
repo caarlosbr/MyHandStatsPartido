@@ -23,11 +23,8 @@ const Sidebar = ({ isOpen, onClose }) => {
         <DrawerHeader borderBottomWidth="1px">MENU</DrawerHeader>
         <DrawerBody>
           <Flex direction="column" gap={4} mt={4}>
-            <MenuItem icon={FaTachometerAlt} label="Dashboard" onClick={() => handleNavigate('/dashboard')} />
             <MenuItem icon={FaUser} label="Jugadores" onClick={() => handleNavigate('/jugadores')} />
-            <MenuItem icon={FaFutbol} label="Partidos" onClick={() => handleNavigate('/partidos')} />
             <MenuItem icon={FaPlusCircle} label="Nuevo Partido" onClick={() => handleNavigate('/nuevo-partido')} />
-            <MenuItem icon={FaChartBar} label="Estadísticas avanzadas" onClick={() => handleNavigate('/estadisticas')} />
             <MenuItem icon={FaUser} label="Seleccionar Equipo" onClick={() => handleNavigate('/seleccionar-equipo')} />
           </Flex>
         </DrawerBody>
