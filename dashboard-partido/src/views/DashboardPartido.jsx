@@ -26,6 +26,13 @@ const DashboardPartido = () => {
   const [equipoRivalNombre, setEquipoRivalNombre] = useState("");
   const [nombreEquipoLocal, setNombreEquipoLocal] = useState("MiEquipo");
   const [fasesJuego, setFasesJuego] = useState([]);
+  const [convocados, setConvocados] = useState([]);
+  const [jugadoresPartido, setJugadoresPartido] = useState([]);
+
+
+
+  /* Pruebas */
+  const [partidoSimulado, setPartidoSimulado] = useState(null);
 
   useEffect(() => {
     let interval = null;
@@ -46,6 +53,30 @@ const DashboardPartido = () => {
   };
 
   useEffect(() => {
+  if (!partidoSimulado) return;
+
+  const token = localStorage.getItem("token");
+  const equipoId = partidoSimulado.equipos_id;
+
+  fetch(`https://myhandstats.onrender.com/equipo/${equipoId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.nombre) setNombreEquipoLocal(data.nombre);
+    });
+
+  fetch(`https://myhandstats.onrender.com/equipo/${equipoId}/jugadores`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      if (Array.isArray(data)) setJugadores(data);
+    });
+}, [partidoSimulado]);
+
+
+  useEffect(() => {
     const token = localStorage.getItem("token");
 
     fetch("https://myhandstats.onrender.com/fases_juego", {
@@ -64,22 +95,7 @@ const DashboardPartido = () => {
         if (Array.isArray(data)) setAcciones(data);
       });
 
-    fetch("https://myhandstats.onrender.com/equipo/27", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.nombre) setNombreEquipoLocal(data.nombre);
-      });
-
-    fetch("https://myhandstats.onrender.com/equipo/27/jugadores", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) setJugadores(data);
-      });
-  }, []);
+  });
 
   useEffect(() => {
     const tiposPorFase = {
@@ -120,18 +136,40 @@ const DashboardPartido = () => {
       Swal.fire("Jugador no seleccionado", "Selecciona un jugador para registrar esta acción", "error");
       return;
     }
-    if (accion.tipo_accion === "goles") {
-      setModalTipo("gol");
-      onOpen();
-    } else {
-      const nuevaAccion = {
-        jugador: jugadorSeleccionado?.nombre || "Sin jugador",
-        tipo: accion.nombre
-      };
-      setAccionesRecientes(prev => [nuevaAccion, ...prev.slice(0, 4)]);
-      console.log("Acción ejecutada:", accion);
+
+    // Obtener jugador_partido_id
+    const jugadorPartido = jugadoresPartido.find(jp => jp.jugadores_id === jugadorSeleccionado.id);
+    if (!jugadorPartido) {
+      Swal.fire("Error", "No se encontró el jugador en el partido", "error");
+      return;
     }
+
+    // Minuto actual
+    const minuto = formatoTiempo();
+
+    // Fase seleccionada
+    const fase = fasesJuego.find(f => f.nombre === faseSeleccionada);
+    if (!fase) {
+      Swal.fire("Error", "Fase de juego no válida", "error");
+      return;
+    }
+
+    // Guardar acción REAL
+    guardarAccionPartido({
+      minuto: minuto,
+      jugadores_partido_id: jugadorPartido.id,
+      acciones_id: accion.id,
+      fases_juego_id: fase.id
+    });
+
+    // Opcional: también actualizar la vista local
+    const nuevaAccion = {
+      jugador: jugadorSeleccionado?.nombre || "Sin jugador",
+      tipo: accion.nombre
+    };
+    setAccionesRecientes(prev => [nuevaAccion, ...prev.slice(0, 4)]);
   };
+
 
   const confirmar = async (mensaje, confirmButton = "Sí") => {
     const result = await Swal.fire({
@@ -159,37 +197,265 @@ const DashboardPartido = () => {
     }
   };
 
+  const crearPartido = async (nombreRival) => {
+    const token = localStorage.getItem("token");
+    const equipoId = 27;
+
+    const body = {
+      fecha: new Date().toISOString(),
+      goles_id_equipo: 0,
+      goles_id_equiporival: 0,
+      equiporival_id: nombreRival,
+      equipos_id: equipoId
+    };
+
+    try {
+      const res = await fetch(`https://myhandstats.onrender.com/equipo/${equipoId}/partido`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(body)
+      });
+
+      const data = await res.json();
+      if (res.ok && data.id) {
+        setPartidoSimulado(data); // guardamos el objeto completo (incluye id)
+        return data;
+      } else {
+        throw new Error("No se pudo crear el partido");
+      }
+    } catch (err) {
+      Swal.fire("Error", "Error al crear el partido", "error");
+      return null;
+    }
+  };
+
+
+const seleccionarConvocados = async () => {
+  return new Promise((resolve) => {
+    let seleccionados = [];
+
+    Swal.fire({
+      title: 'Seleccionar Convocados',
+      html: `
+        <div id="convocados-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:10px; max-height:300px; overflow:auto;"></div>
+      `,
+      willOpen: () => {
+        const container = document.getElementById('convocados-grid');
+        jugadores.forEach(j => {
+          const card = document.createElement('div');
+          card.classList.add('jugador-card');
+          card.setAttribute('data-id', j.id);
+          card.style.cursor = 'pointer';
+          card.style.padding = '10px';
+          card.style.border = '1px solid #ccc';
+          card.style.borderRadius = '8px';
+          card.style.background = '#eee'; // no convocado
+          card.style.textAlign = 'center';
+          card.innerHTML = `<strong>${j.dorsal}</strong><br>${j.nombre}`;
+
+          card.onclick = () => {
+            if (seleccionados.includes(j.id)) {
+              seleccionados = seleccionados.filter(id => id !== j.id);
+              card.style.background = '#eee';
+            } else {
+              seleccionados.push(j.id);
+              card.style.background = '#fff'; // convocado
+            }
+          };
+
+          container.appendChild(card);
+        });
+      },
+      confirmButtonText: 'Confirmar',
+      preConfirm: () => {
+        setConvocados(jugadores.filter(j => seleccionados.includes(j.id)));
+        return true;
+      },
+      showCancelButton: true
+    }).then(result => {
+      resolve(result.isConfirmed);
+    });
+  });
+};
+
+const crearJugadoresPartido = async (convocados, equipoId, partidoId) => {
+  const token = localStorage.getItem("token");
+  const jugadoresCreados = [];
+
+  for (const jugador of convocados) {
+    const payload = {
+      golesli: 0, golesld: 0, golesei: 0, golesc: 0, goles7m: 0, golesed: 0, golest: 0, golespi: 0,
+      tarjetas_amarillas: 0, tarjetas_rojas: 0,
+      lanzamientos: 0, lanzamiento_7m: 0, exclusiones: 0, recuperaciones: 0, perdidas: 0,
+      partidos_id: partidoId,
+      jugadores_id: jugador.id,
+      paradas: 0, lanzamiento_ed: 0, lanzamiento_li: 0, lanzamiento_c: 0, lanzamiento_pi: 0,
+      lanzamiento_ext_ld: 0, lanzamiento_ext_li: 0, lanzamiento_ext_c: 0,
+      exclusion_2_min: 0, tarjetas_azules: 0, fallo_pase: 0, fallo_recepcion: 0,
+      pasos: 0, falta_en_ataque: 0, dobles: 0, invasion_area: 0, blocaje: 0, robo: 0
+    };
+
+    try {
+      const res = await fetch(
+        `https://myhandstats.onrender.com/equipo/${equipoId}/partido/${partidoId}/jugador_partido`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      const data = await res.json();
+      jugadoresCreados.push(data); 
+    } catch (err) {
+      console.error("Error al crear jugador del partido", err);
+    }
+  }
+
+  setJugadoresPartido(jugadoresCreados); 
+  console.log("Jugadores del partido creados:", jugadoresCreados);
+};
+
+
+
+
+const guardarAccionPartido = async (accion) => {
+  const token = localStorage.getItem("token");
+
+  try {
+    const res = await fetch("https://myhandstats.onrender.com/accion_partido", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(accion)
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Error al guardar la acción");
+    console.log("✅ Acción guardada:", data);
+  } catch (error) {
+    console.error("❌ Error guardando acción:", error.message);
+    Swal.fire("Error", error.message, "error");
+  }
+};
+
+
+
+
   const acortarNombre = (nombre) => nombre.slice(0, 6);
 
   if (!partidoIniciado) {
-  return (
-    <Box p={8} minH="100vh" bg="white" textAlign="center">
-      <Text fontSize="xl" mb={4} fontWeight="bold">Comenzar nuevo partido</Text>
-      <Button
-        bg="#014C4C"
-        color="white"
-        _hover={{ bg: '#016666' }}
-        onClick={async () => {
-          const { value: nombreRival } = await Swal.fire({
-            title: 'Nombre del equipo rival',
-            input: 'text',
-            inputPlaceholder: 'Ej. Atlético Madrid',
-            confirmButtonText: 'Comenzar',
-            showCancelButton: true,
-            inputValidator: (value) => {
-              if (!value) return 'Por favor, escribe un nombre';
-            }
-          });
+    return (
+      <Box p={8} minH="100vh" bg="white" textAlign="center">
+        <Text fontSize="xl" mb={4} fontWeight="bold">Comenzar nuevo partido</Text>
+        <Button
+          bg="#014C4C"
+          color="white"
+          _hover={{ bg: '#016666' }}
+          onClick={async () => {
+            const { value: nombreRival } = await Swal.fire({
+              title: 'Nombre del equipo rival',
+              input: 'text',
+              inputPlaceholder: 'Ej. Atlético Madrid',
+              confirmButtonText: 'Continuar',
+              showCancelButton: true,
+              inputValidator: (value) => {
+                if (!value) return 'Por favor, escribe un nombre';
+              }
+            });
 
-          if (nombreRival) {
-            setEquipoRivalNombre(nombreRival);
-            setPartidoIniciado(true);
-          }
-        }}
-      >
-        Comenzar Partido
-      </Button>
-    </Box>
+            if (!nombreRival) return;
+
+            const token = localStorage.getItem("token");
+            const response = await fetch(`https://myhandstats.onrender.com/equipo/27/jugadores`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await response.json();
+            if (!Array.isArray(data) || data.length === 0) {
+              Swal.fire("Sin jugadores", "No hay jugadores disponibles", "error");
+              return;
+            }
+            setJugadores(data);
+
+
+            const confirmados = await new Promise((resolve) => {
+              let seleccionados = [];
+
+              Swal.fire({
+                title: 'Seleccionar Convocados',
+                html: `<div id="convocados-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:10px; max-height:300px; overflow:auto;"></div>`,
+                willOpen: () => {
+                  const container = document.getElementById('convocados-grid');
+                  data.forEach(j => {
+                    const card = document.createElement('div');
+                    card.classList.add('jugador-card');
+                    card.setAttribute('data-id', j.id);
+                    card.style.cursor = 'pointer';
+                    card.style.padding = '10px';
+                    card.style.border = '1px solid #ccc';
+                    card.style.borderRadius = '8px';
+                    card.style.background = '#eee';
+                    card.style.textAlign = 'center';
+                    card.innerHTML = `<strong>${j.dorsal}</strong><br>${j.nombre}`;
+
+                    card.onclick = () => {
+                      if (seleccionados.includes(j.id)) {
+                        seleccionados = seleccionados.filter(id => id !== j.id);
+                        card.style.background = '#eee';
+                      } else {
+                        seleccionados.push(j.id);
+                        card.style.background = '#fff';
+                      }
+                    };
+
+                    container.appendChild(card);
+                  });
+                },
+                confirmButtonText: 'Confirmar',
+                preConfirm: () => {
+                  const seleccionadosIds = Array.from(document.querySelectorAll('#convocados-grid .jugador-card'))
+                    .filter(card => card.style.background === 'rgb(255, 255, 255)')
+                    .map(card => Number(card.getAttribute('data-id')));
+                  
+                  return data.filter(j => seleccionadosIds.includes(j.id)); // devuelve los jugadores seleccionados
+                },
+
+                showCancelButton: true
+              }).then(result => {
+                if (result.isConfirmed) {
+                  resolve(result.value); // esto es el array de jugadores seleccionados
+                } else {
+                  resolve([]); // si canceló
+                }
+              });
+
+            });
+
+            const partido = await crearPartido(nombreRival);
+
+            if (confirmados.length > 0 && partido?.id) {
+              setConvocados(confirmados);
+              setEquipoRivalNombre(nombreRival);
+              setPartidoSimulado(partido);
+              setPartidoIniciado(true);
+
+              await crearJugadoresPartido(confirmados, partido.equipos_id, partido.id);
+              console.log(partido.equipos_id,partido.id);
+            }
+
+          }}
+        >
+          Comenzar Partido
+        </Button>
+      </Box>
   );
 }
 
@@ -227,7 +493,7 @@ const DashboardPartido = () => {
           <Button colorScheme="teal" size="sm" mb={4}>1 Pepe</Button>
           <Text fontWeight="bold" mb={1}>En Pista</Text>
           <SimpleGrid columns={3} spacing={2} mb={4}>
-            {jugadores.map((jugador) => (
+            {convocados.map((jugador) => (
               <Button
                 key={jugador.id}
                 size="sm"
