@@ -28,7 +28,19 @@ const DashboardPartido = () => {
   const [fasesJuego, setFasesJuego] = useState([]);
   const [convocados, setConvocados] = useState([]);
   const [jugadoresPartido, setJugadoresPartido] = useState([]);
+  const [lanzamientos, setLanzamientos] = useState([]);
+  const {
+    isOpen: isLanzamientoOpen,
+    onOpen: onLanzamientoOpen,
+    onClose: onLanzamientoClose
+  } = useDisclosure();
 
+  const [goles, setGoles] = useState([]);
+  const {
+    isOpen: isGolesOpen,
+    onOpen: onGolesOpen,
+    onClose: onGolesClose
+  } = useDisclosure();
 
 
   /* Pruebas */
@@ -103,9 +115,9 @@ const DashboardPartido = () => {
       "defensiva": ["recuperacion", "amonestacion", "gol_en_contra"],
       "contra_ataque": ["goles", "lanzamiento", "perdida"],
       "repliegue": ["gol_en_contra", "amonestacion"],
-      "superioridad_ofensiva": ["goles", "lanzamiento"],
+      "superioridad_ofensiva": ["goles", "lanzamiento", "perdida"],
       "superioridad_defensiva": ["recuperacion", "gol_en_contra"],
-      "inferioridad_ofensiva": ["lanzamiento", "perdida"],
+      "inferioridad_ofensiva": ["lanzamiento", "perdida", "gol"],
       "inferioridad_defensiva\n": ["gol_en_contra", "amonestacion"]
     };
     const tipos = tiposPorFase[faseSeleccionada] || [];
@@ -347,6 +359,46 @@ const guardarAccionPartido = async (accion) => {
   }
 };
 
+const obtenerLanzamientos = async () => {
+  const token = localStorage.getItem("token");
+  try {
+    const res = await fetch("https://myhandstats.onrender.com/acciones/filtrar?tipo_accion=lanzamiento", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    const data = await res.json();
+    if (Array.isArray(data)) {
+      setLanzamientos(data);
+      onLanzamientoOpen();
+    }
+  } catch (err) {
+    console.error("Error al cargar lanzamientos", err);
+  }
+};
+
+const obtenerGoles = async () => {
+  if (!jugadorSeleccionado) {
+    Swal.fire("Selecciona un jugador", "Debes elegir un jugador antes de registrar un gol", "warning");
+    return;
+  }
+
+  const token = localStorage.getItem("token");
+  try {
+    const res = await fetch("https://myhandstats.onrender.com/acciones/filtrar?tipo_accion=goles", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    const data = await res.json();
+    if (Array.isArray(data)) {
+      setGoles(data);
+      onGolesOpen();
+    }
+  } catch (err) {
+    console.error("Error al cargar goles", err);
+  }
+};
 
 
 
@@ -546,8 +598,36 @@ const guardarAccionPartido = async (accion) => {
           </Flex>
 
           <Text fontWeight="bold" mb={2}>Acciones</Text>
+          {["ofensiva", "contra_ataque", "superioridad_ofensiva", "inferioridad_ofensiva"].includes(faseSeleccionada) && (
+            <Button
+              size="sm"
+              colorScheme="teal"
+              mb={3}
+              onClick={obtenerLanzamientos}
+            >
+              Ver Lanzamientos
+            </Button>   
+          )}
+
+          {["ofensiva", "contra_ataque", "superioridad_ofensiva", "inferioridad_ofensiva"].includes(faseSeleccionada) && (
+            <Button
+              size="sm"
+              colorScheme="green"
+              mb={3}
+              ml={2}
+              onClick={obtenerGoles}
+            >
+              Ver Goles
+            </Button>
+          )}
+
+
           <SimpleGrid columns={[2, 3, 4]} spacingX={3} spacingY={4} mb={6}>
-            {accionesFiltradas.map((accion) => (
+          {accionesFiltradas
+            .filter((accion) =>
+              accion.tipo_accion !== "lanzamiento" && accion.tipo_accion !== "goles"
+            )
+            .map((accion) => (
               <Button
                 key={accion.id}
                 size="sm"
@@ -563,7 +643,9 @@ const guardarAccionPartido = async (accion) => {
               >
                 {accion.nombre.replaceAll("_", " ")}
               </Button>
-            ))}
+          ))}
+
+
           </SimpleGrid>
 
           <Flex justify="flex-end">
@@ -631,6 +713,87 @@ const guardarAccionPartido = async (accion) => {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <Modal isOpen={isLanzamientoOpen} onClose={onLanzamientoClose} size="xl" isCentered>
+        <ModalOverlay />
+        <ModalContent>
+        <ModalHeader textAlign="center" bg="#014C4C" color="white">
+          Lanzamientos disponibles
+          {jugadorSeleccionado && (
+            <Text fontSize="sm" fontWeight="normal" color="white" mt={1}>
+              {jugadorSeleccionado.dorsal} - {jugadorSeleccionado.nombre}
+            </Text>
+          )}
+        </ModalHeader>
+
+          <ModalBody>
+            <SimpleGrid columns={[2, 3, 4]} spacing={3}>
+              {lanzamientos.map((accion) => (
+              <Button
+                key={accion.id}
+                size="sm"
+                variant="outline"
+                bg="white"
+                _hover={{ bg: "gray.100" }}
+                _active={{ bg: "white", transform: "none" }}
+                _focus={{ boxShadow: "none", bg: "white" }}
+                onClick={() => {
+                  handleAccion(accion);
+                  onLanzamientoClose();
+                }}
+              >
+                {accion.nombre.replaceAll("_", " ")}
+              </Button>
+
+
+              ))}
+            </SimpleGrid>
+          </ModalBody>
+          <ModalFooter>
+            <Button onClick={onLanzamientoClose}>Cerrar</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal isOpen={isGolesOpen} onClose={onGolesClose} size="xl" isCentered>
+        <ModalOverlay />
+        <ModalContent>
+        <ModalHeader textAlign="center" bg="#014C4C" color="white">
+          Goles disponibles
+          {jugadorSeleccionado && (
+            <Text fontSize="sm" fontWeight="normal" color="white" mt={1}>
+              {jugadorSeleccionado.dorsal} - {jugadorSeleccionado.nombre}
+            </Text>
+          )}
+        </ModalHeader>
+
+          <ModalBody>
+            <SimpleGrid columns={[2, 3, 4]} spacing={3}>
+              {goles.map((accion) => (
+                <Button
+                  key={accion.id}
+                  size="sm"
+                  variant="outline"
+                  bg="white"
+                  _hover={{ bg: "gray.100" }}
+                  _active={{ bg: "white", transform: "none" }}
+                  _focus={{ boxShadow: "none", bg: "white" }}
+                  onClick={() => {
+                    handleAccion(accion);
+                    onGolesClose();
+                  }}
+                >
+                  {accion.nombre.replaceAll("_", " ")}
+                </Button>
+              ))}
+            </SimpleGrid>
+          </ModalBody>
+          <ModalFooter>
+            <Button onClick={onGolesClose}>Cerrar</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
     </Box>
   );
 };
