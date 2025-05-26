@@ -4,8 +4,10 @@ import {
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter,
   useDisclosure, VStack
 } from '@chakra-ui/react';
-import { FaBars, FaPause } from 'react-icons/fa';
+import { FaBars, FaPause, FaPlay } from 'react-icons/fa';
 import Swal from 'sweetalert2';
+import { useNavigate } from 'react-router-dom';
+
 
 const DashboardPartido = () => {
   const [jugadores, setJugadores] = useState([]);
@@ -29,18 +31,11 @@ const DashboardPartido = () => {
   const [convocados, setConvocados] = useState([]);
   const [jugadoresPartido, setJugadoresPartido] = useState([]);
   const [lanzamientos, setLanzamientos] = useState([]);
-  const {
-    isOpen: isLanzamientoOpen,
-    onOpen: onLanzamientoOpen,
-    onClose: onLanzamientoClose
-  } = useDisclosure();
-
+  const {isOpen: isLanzamientoOpen, onOpen: onLanzamientoOpen, onClose: onLanzamientoClose} = useDisclosure();
   const [goles, setGoles] = useState([]);
-  const {
-    isOpen: isGolesOpen,
-    onOpen: onGolesOpen,
-    onClose: onGolesClose
-  } = useDisclosure();
+  const {isOpen: isGolesOpen, onOpen: onGolesOpen, onClose: onGolesClose} = useDisclosure();
+  const [parte, setParte] = useState(1);
+  const navigate = useNavigate();
 
 
   /* Pruebas */
@@ -194,20 +189,27 @@ const DashboardPartido = () => {
     return result.isConfirmed;
   };
 
-  const handleFinalizarParte = async () => {
+const handleFinalizarParte = async () => {
     if (await confirmar("¿Estás seguro de finalizar la parte?")) {
       setActivo(false);
-      setSegundos(0);
+      setSegundos(1800); 
+      setParte((prev) => (prev === 1 ? 2 : prev)); 
       Swal.fire("Parte finalizada", "Puedes comenzar la siguiente parte", "success");
     }
   };
 
-  const handleFinalizarPartido = async () => {
-    if (await confirmar("¿Finalizar el partido completamente?")) {
-      setActivo(false);
-      Swal.fire("Partido finalizado", "Buen trabajo", "success");
-    }
-  };
+
+const handleFinalizarPartido = async () => {
+  if (await confirmar("¿Finalizar el partido completamente?")) {
+    setActivo(false);
+    Swal.fire("Partido finalizado", "Buen trabajo", "success").then(() => {
+      navigate("/seleccionar-equipo");
+    });
+  }
+};
+
+
+  
 
   const crearPartido = async (nombreRival) => {
     const token = localStorage.getItem("token");
@@ -523,11 +525,20 @@ const obtenerGoles = async () => {
           <Text fontSize="2xl" color="red.500" fontWeight="bold">:</Text>
           <Text fontSize="2xl" color="red.500" fontWeight="bold">{golesVisitante}</Text>
         </Flex>
-        <Flex align="center" justify="center" boxSize={8} bg="#014C4C" borderRadius="full" color="white" cursor="pointer" onClick={() => setActivo(prev => !prev)}>
-          <Icon as={FaPause} fontSize="xs" />
+        <Flex
+          align="center"
+          justify="center"
+          boxSize={8}
+          bg="#014C4C"
+          borderRadius="full"
+          color="white"
+          cursor="pointer"
+          onClick={() => setActivo(prev => !prev)}
+        >
+          <Icon as={activo ? FaPause : FaPlay} fontSize="xs" />
         </Flex>
         <Flex direction="column" align="center">
-          <Text fontSize="sm">1º Parte</Text>
+        <Text fontSize="sm">{parte}º Parte</Text>
           <Text fontSize="xl" fontWeight="bold">{formatoTiempo()}</Text>
         </Flex>
         <Button variant="outline" size="sm" onClick={handleFinalizarParte}>Acabar Parte</Button>
@@ -612,7 +623,7 @@ const obtenerGoles = async () => {
           {["ofensiva", "contra_ataque", "superioridad_ofensiva", "inferioridad_ofensiva"].includes(faseSeleccionada) && (
             <Button
               size="sm"
-              colorScheme="green"
+              colorScheme="teal"
               mb={3}
               ml={2}
               onClick={obtenerGoles}
