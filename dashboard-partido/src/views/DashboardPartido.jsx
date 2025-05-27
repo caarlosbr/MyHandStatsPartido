@@ -603,19 +603,20 @@ const obtenerGolesEnContra = async () => {
           <Text fontWeight="bold" mb={1}>En Pista</Text>
           <SimpleGrid columns={3} spacing={2} mb={4}>
             {convocados.map((jugador) => (
-              <Button
-                key={jugador.id}
-                size="sm"
-                bg="#014C4C"
-                color="white"
-                onClick={() => setJugadorSeleccionado(jugador)}
-                px={2}
-                fontSize="xs"
-                textAlign="center"
-                whiteSpace="normal"
-              >
-                {jugador.dorsal} <br /> {jugador.nombre}
-              </Button>
+            <Button
+              key={jugador.id}
+              h="52px" 
+              px={2}
+              fontSize="sm"
+              bg="#014C4C"
+              color="white"
+              onClick={() => setJugadorSeleccionado(jugador)}
+              textAlign="center"
+              whiteSpace="normal"
+            >
+              {jugador.dorsal} <br /> {jugador.nombre}
+            </Button>
+
             ))}
           </SimpleGrid>
 
@@ -644,7 +645,8 @@ const obtenerGolesEnContra = async () => {
             {fasesJuego.map((fase) => (
               <Button
                 key={fase.id}
-                size="sm"
+                size="md"
+                h="44px"
                 variant={faseSeleccionada === fase.nombre ? "solid" : "outline"}
                 colorScheme={faseSeleccionada === fase.nombre ? "teal" : "gray"}
                 onClick={() => setFaseSeleccionada(fase.nombre)}
