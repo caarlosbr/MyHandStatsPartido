@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect,useRef  } from 'react';
 import {
   Box, Flex, Icon, Text, Button, Grid, SimpleGrid,
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  useDisclosure, VStack
+  useDisclosure, VStack, useToast
 } from '@chakra-ui/react';
 import { FaBars, FaPause, FaPlay } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
+
 
 // Creamos el componente DashboardPartido con todos los hooks y estados necesarios
 const DashboardPartido = () => {
@@ -37,6 +38,8 @@ const DashboardPartido = () => {
   const [parte, setParte] = useState(1);
   const [golesEnContra, setGolesEnContra] = useState([]);
   const { isOpen: isGolesContraOpen, onOpen: onGolesContraOpen, onClose: onGolesContraClose } = useDisclosure();
+  const toast = useToast();
+  const hasMounted = useRef(false);
   const navigate = useNavigate();
 
 
@@ -130,6 +133,44 @@ const DashboardPartido = () => {
     setAccionesFiltradas(filtradas);
   }, [faseSeleccionada, acciones]);
 
+
+  useEffect(() => {
+    if (!partidoIniciado) return;
+
+    const toastId = 'jugador-toast';
+
+    if (toast.isActive(toastId)) {
+      toast.update(toastId, {
+        title: jugadorSeleccionado
+          ? 'Jugador seleccionado'
+          : 'Ningún jugador seleccionado',
+        description: jugadorSeleccionado
+          ? `${jugadorSeleccionado.dorsal} - ${jugadorSeleccionado.nombre}`
+          : 'Selecciona un jugador antes de realizar una acción, para las acciones de gol en contra no es necesario.',
+        status: jugadorSeleccionado ? 'success' : 'warning',
+        duration: 3000,
+        isClosable: true,
+        position: 'top-right',
+      });
+    } else {
+      toast({
+        id: toastId,
+        title: jugadorSeleccionado
+          ? 'Jugador seleccionado'
+          : 'Ningún jugador seleccionado',
+        description: jugadorSeleccionado
+          ? `${jugadorSeleccionado.dorsal} - ${jugadorSeleccionado.nombre}`
+          : 'Selecciona un jugador antes de realizar una acción',
+        status: jugadorSeleccionado ? 'success' : 'warning',
+        duration: 3000,
+        isClosable: true,
+        position: 'top-right',
+      });
+    }
+  }, [jugadorSeleccionado, partidoIniciado]);
+
+
+
   // 
   const handleGuardarGol = () => {
     if (!zonaDisparo || (modalTipo === "gol" && !zonaLanzador)) {
@@ -148,6 +189,7 @@ const DashboardPartido = () => {
     setZonaLanzador(null);
     setModalTipo(null);
   };
+
 
   const handleAccion = (accion) => {
     if (accion.tipo_accion !== "gol_en_contra" && !jugadorSeleccionado) {
@@ -188,6 +230,28 @@ const DashboardPartido = () => {
       tipo: accion.nombre
     };
     setAccionesRecientes(prev => [nuevaAccion, ...prev.slice(0, 4)]);
+
+    toast({
+      title: 'Acción registrada',
+      description: `Se registró: ${accion.nombre.replaceAll('_', ' ')}${jugadorSeleccionado ? ` - ${jugadorSeleccionado.dorsal} ${jugadorSeleccionado.nombre}` : ''}`,
+      status: 'info',
+      duration: 2500,
+      isClosable: true,
+      position: 'bottom-left'
+    });
+
+
+    if (!jugadorSeleccionado) {
+      toast({
+        title: 'Jugador no seleccionado',
+        description: 'Debes seleccionar un jugador para esta acción',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+        position: 'top-right'
+      });
+      return;
+    }
   };
 
 
@@ -542,6 +606,8 @@ const obtenerGolesEnContra = async () => {
   );
 }
 
+
+
   return (
     <Box p={4} minH="100vh" bg="white">
       <Flex align="center" justify="space-between" wrap="wrap" gap={4} mb={6}>
@@ -602,22 +668,34 @@ const obtenerGolesEnContra = async () => {
         <Box minW="200px">
           <Text fontWeight="bold" mb={1}>En Pista</Text>
           <SimpleGrid columns={3} spacing={2} mb={4}>
-            {convocados.map((jugador) => (
-            <Button
-              key={jugador.id}
-              h="52px" 
-              px={2}
-              fontSize="sm"
-              bg="#014C4C"
-              color="white"
-              onClick={() => setJugadorSeleccionado(jugador)}
-              textAlign="center"
-              whiteSpace="normal"
-            >
-              {jugador.dorsal} <br /> {jugador.nombre}
-            </Button>
+            {convocados.map((jugador) => {
+              const isSelected = jugadorSeleccionado?.id === jugador.id;
 
-            ))}
+              return (
+                <Button
+                  key={jugador.id}
+                  h="52px"
+                  px={2}
+                  fontSize="sm"
+                  bg={isSelected ? "teal.700" : "#014C4C"}  // ← cambia color si está seleccionado
+                  color="white"
+                  border={isSelected ? "2px solid #319795" : "none"} // opcional para remarcar
+                  _hover={{ bg: isSelected ? "teal.600" : "#016666" }}
+                  onClick={() => {
+                    if (jugadorSeleccionado?.id === jugador.id) {
+                      setJugadorSeleccionado(null); // ⇦ se deselecciona si ya estaba seleccionado
+                    } else {
+                      setJugadorSeleccionado(jugador); // ⇦ se selecciona
+                    }
+                  }}
+                  textAlign="center"
+                  whiteSpace="normal"
+                >
+                  {jugador.dorsal} <br /> {jugador.nombre}
+                </Button>
+              );
+            })}
+
           </SimpleGrid>
 
           {/* Log de acciones abajo a la izquierda */}
@@ -798,36 +876,28 @@ const obtenerGolesEnContra = async () => {
           )}
         </ModalHeader>
 
-          <ModalBody>
-            <SimpleGrid columns={[2, 3, 4]} spacingX={3} spacingY={4} mb={6}>
-              {accionesFiltradas
-                .filter(
-                  (accion) =>
-                    accion.tipo_accion !== "goles" &&
-                    accion.tipo_accion !== "lanzamiento" &&
-                    accion.tipo_accion !== "gol_en_contra" 
-                )
-                .map((accion) => (
-                  <Button
-                    key={accion.id}
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleAccion(accion)}
-                    whiteSpace="normal"
-                    wordBreak="break-word"
-                    textAlign="center"
-                    px={2}
-                    h="50px"
-                    fontSize="sm"
-                    lineHeight="1.2"
-                  >
-                    {accion.nombre.replaceAll("_", " ")}
-                  </Button>
-                ))}
-            </SimpleGrid>
+        <ModalBody>
+          <SimpleGrid columns={[2, 3, 4]} spacingX={3} spacingY={4} mb={6}>
+            {lanzamientos.map((accion) => (
+              <Button
+                key={accion.id}
+                size="sm"
+                variant="outline"
+                onClick={() => handleAccion(accion)}
+                whiteSpace="normal"
+                wordBreak="break-word"
+                textAlign="center"
+                px={2}
+                h="50px"
+                fontSize="sm"
+                lineHeight="1.2"
+              >
+                {accion.nombre.replaceAll("_", " ")}
+              </Button>
+            ))}
+          </SimpleGrid>
+        </ModalBody>
 
-
-          </ModalBody>
           <ModalFooter>
             <Button onClick={onLanzamientoClose}>Cerrar</Button>
           </ModalFooter>
