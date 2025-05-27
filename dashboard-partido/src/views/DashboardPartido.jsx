@@ -8,7 +8,7 @@ import { FaBars, FaPause, FaPlay } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
 
-
+// Creamos el componente DashboardPartido con todos los hooks y estados necesarios
 const DashboardPartido = () => {
   const [jugadores, setJugadores] = useState([]);
   const [acciones, setAcciones] = useState([]);
@@ -41,6 +41,7 @@ const DashboardPartido = () => {
   /* Pruebas */
   const [partidoSimulado, setPartidoSimulado] = useState(null);
 
+  // Creamos el efecto de carga inicial de datos
   useEffect(() => {
     let interval = null;
     if (activo) {
@@ -53,18 +54,22 @@ const DashboardPartido = () => {
     return () => clearInterval(interval);
   }, [activo]);
 
+  // Creamos una función para formatear el tiempo en minutos y segundos
   const formatoTiempo = () => {
     const min = String(Math.floor(segundos / 60)).padStart(2, '0');
     const sec = String(segundos % 60).padStart(2, '0');
     return `${min}:${sec}`;
   };
 
+  // Si el partido no ha sido simulado, cargamos los datos del equipo local y sus jugadores
   useEffect(() => {
   if (!partidoSimulado) return;
 
+  // Cargamos el token de autenticación, junto a el ID del equipo del partido 
   const token = localStorage.getItem("token");
   const equipoId = partidoSimulado.equipos_id;
 
+  // Hacemos las peticiones para obtener el nombre del equipo y sus jugadores
   fetch(`https://myhandstats.onrender.com/equipo/${equipoId}`, {
     headers: { Authorization: `Bearer ${token}` },
   })
@@ -73,6 +78,7 @@ const DashboardPartido = () => {
       if (data.nombre) setNombreEquipoLocal(data.nombre);
     });
 
+  // Obtenemos los jugadores del equipo  
   fetch(`https://myhandstats.onrender.com/equipo/${equipoId}/jugadores`, {
     headers: { Authorization: `Bearer ${token}` },
   })
@@ -83,6 +89,7 @@ const DashboardPartido = () => {
 }, [partidoSimulado]);
 
 
+  // Cargamos las fases de juego y acciones disponibles al iniciar el componente
   useEffect(() => {
     const token = localStorage.getItem("token");
 
@@ -101,9 +108,10 @@ const DashboardPartido = () => {
       .then((data) => {
         if (Array.isArray(data)) setAcciones(data);
       });
+  }, []); 
 
-  });
 
+  // Filtramos las acciones según la fase seleccionada
   useEffect(() => {
     const tiposPorFase = {
       "ofensiva": ["goles", "lanzamiento", "perdida"],
@@ -120,6 +128,7 @@ const DashboardPartido = () => {
     setAccionesFiltradas(filtradas);
   }, [faseSeleccionada, acciones]);
 
+  // 
   const handleGuardarGol = () => {
     if (!zonaDisparo || (modalTipo === "gol" && !zonaLanzador)) {
       Swal.fire("Faltan datos", "Debes seleccionar una zona de disparo y lanzador", "warning");
