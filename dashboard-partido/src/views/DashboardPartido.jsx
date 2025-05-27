@@ -146,7 +146,7 @@ const DashboardPartido = () => {
           : 'Ningún jugador seleccionado',
         description: jugadorSeleccionado
           ? `${jugadorSeleccionado.dorsal} - ${jugadorSeleccionado.nombre}`
-          : 'Selecciona un jugador antes de realizar una acción, para las acciones de gol en contra no es necesario.',
+          : 'Selecciona un jugador antes de realizar una acción.',
         status: jugadorSeleccionado ? 'success' : 'warning',
         duration: 2500,
         isClosable: true,

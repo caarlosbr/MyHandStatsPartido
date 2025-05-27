@@ -125,41 +125,43 @@ const Jugadores = () => {
         });
         cargarJugadores(); // refrescar lista
       })
-      .catch((err) => console.error("Error al crear jugador:", err));
+      .catch((err) =>  err);
   };
 
-  const cargarJugadores = () => {
-    const token = localStorage.getItem("token");
-    const equipoId = localStorage.getItem("id_equipo");
+const cargarJugadores = () => {
+  const token = localStorage.getItem("token");
+  const equipoId = localStorage.getItem("id_equipo");
 
-    if (!equipoId) return;
+  if (!equipoId) return;
 
-    setEquipoSeleccionado(equipoId);
-    setLoading(true);
+  setEquipoSeleccionado(equipoId);
+  setLoading(true);
 
-    fetch(`https://myhandstats.onrender.com/equipo/${equipoId}/jugadores`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+  fetch(`https://myhandstats.onrender.com/equipo/${equipoId}/jugadores`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+    .then((res) => res.json())
+    .then((data) => {
+     // console.log("Datos recibidos de jugadores:", data); 
+      if (Array.isArray(data)) {
+        setJugadores(data);
+      } else {
+        // console.error("Respuesta inesperada:", data);
+        setJugadores([]);
+      }
     })
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setJugadores(data);
-        } else {
-          console.error("Respuesta inesperada:", data);
-          setJugadores([]);
-        }
-      })
-      .catch((err) => console.error("Error al cargar jugadores:", err))
-      .finally(() => setLoading(false));
-  };
+    .catch((err) =>  err)
+    .finally(() => setLoading(false));
+};
+
 
   const cargarPosiciones = () => {
     fetch("https://myhandstats.onrender.com/posiciones")
       .then((res) => res.json())
       .then((data) => setPosiciones(data))
-      .catch((err) => console.error("Error al cargar posiciones:", err));
+      .catch((err) => err);
   };
 
   useEffect(() => {
@@ -193,143 +195,60 @@ const Jugadores = () => {
         <Box textAlign="center" mt={10}>
           <Spinner size="xl" color="teal.600" />
         </Box>
-      ) : (
+        ) : jugadores.length === 0 ? (
+          <Box textAlign="center" mt={10}>
+            <Text fontSize="lg" color="gray.600">
+              Aún no hay jugadores con ficha para este equipo.
+            </Text>
+          </Box>
+        ) : (
         <SimpleGrid columns={gridCols} spacing={6}>
           {jugadores.map((jugador) => (
             <Box
               key={jugador.id}
-              bg="#e0f7f7"
+              bg="white"
               borderRadius="2xl"
-              boxShadow="lg"
+              boxShadow="md"
               p={6}
-              textAlign="center"
+              textAlign="left"
               maxW="320px"
               w="100%"
               mx="auto"
               transition="all 0.3s ease"
+              border="1px solid #e2e8f0"
               _hover={{
-                transform: "translateY(-5px)",
-                boxShadow: "xl",
-                bg: "#d3f0f0",
+                transform: "translateY(-4px)",
+                boxShadow: "lg",
+                borderColor: "#319795",
               }}
             >
-              <Avatar icon={<FaUser />} size="2xl" bg="#a8dadc" mb={4} />
-              <Text fontWeight="bold" fontSize="lg" color="#014C4C" mb={1}>
-                {jugador.nombre}
-              </Text>
-              <Text fontSize="sm" color="gray.600">
-                Edad:{" "}
-                {jugador.fecha_nac
-                  ? calcularEdad(jugador.fecha_nac) + " años"
-                  : "—"}
-              </Text>
+              <Flex direction="column" align="center" mb={4}>
+                <Avatar icon={<FaUser />} size="2xl" bg="#a8dadc" />
+                <Text fontSize="lg" fontWeight="bold" color="#014C4C" mt={3}>
+                  {jugador.nombre}
+                </Text>
+              </Flex>
 
-              <Text fontSize="sm" color="gray.600">
-                Dorsal: {jugador.dorsal}
-              </Text>
-              <Text fontSize="sm" color="gray.600" mb={4}>
-                {jugador.posicion
-                  ? jugador.posicion.replace(/_/g, " ")
-                  : "Sin posición"}
-              </Text>
-              <Button
-                bg="#014C4C"
-                color="white"
-                size="md"
-                borderRadius="lg"
-                _hover={{ bg: "#013C3C" }}
-                px={6}
-              >
-                Ver Stats
-              </Button>
+              <VStack align="start" spacing={2}>
+                <Text fontSize="sm" color="gray.700">
+                  <Box as="span" fontWeight="bold" color="#014C4C">Edad:</Box>{' '}
+                  {jugador.fecha_nac ? `${calcularEdad(jugador.fecha_nac)} años` : "—"}
+                </Text>
+                <Text fontSize="sm" color="gray.700">
+                  <Box as="span" fontWeight="bold" color="#014C4C">Dorsal:</Box>{' '}
+                  {jugador.dorsal || "—"}
+                </Text>
+                <Text fontSize="sm" color="gray.700">
+                  <Box as="span" fontWeight="bold" color="#014C4C">Posición:</Box>{' '}
+                  {jugador.posiciones?.length > 0
+                    ? jugador.posiciones.map(p => p.nombre.replace(/_/g, " ")).join(", ")
+                    : "Sin posición"}
+                </Text>
+              </VStack>
             </Box>
           ))}
         </SimpleGrid>
       )}
-
-      <IconButton
-        icon={<FaPlus />}
-        bg="#014C4C"
-        color="white"
-        borderRadius="full"
-        size="lg"
-        position="fixed"
-        bottom={6}
-        right={6}
-        aria-label="Añadir jugador"
-        boxShadow="lg"
-        _hover={{ bg: "#013C3C" }}
-        onClick={() => setIsModalOpen(true)}
-      />
-
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        isCentered
-        size="lg"
-      >
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Creación de Jugador</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack spacing={4}>
-              <FormControl>
-                <Input
-                  name="nombre"
-                  placeholder="Nombre del Jugador"
-                  value={nuevoJugador.nombre}
-                  onChange={handleInputChange}
-                />
-              </FormControl>
-              <FormControl>
-                <Input
-                  name="fecha_nacimiento"
-                  type="date"
-                  placeholder="Fecha Nacimiento"
-                  value={nuevoJugador.fecha_nacimiento}
-                  onChange={handleInputChange}
-                />
-              </FormControl>
-              <FormControl>
-                <Input
-                  name="dorsal"
-                  placeholder="Dorsal"
-                  value={nuevoJugador.dorsal}
-                  onChange={handleInputChange}
-                />
-              </FormControl>
-              <FormControl>
-                <Select
-                  name="posicion"
-                  placeholder="Selecciona una posición"
-                  value={nuevoJugador.posicion}
-                  onChange={(e) =>
-                    setNuevoJugador((prev) => ({
-                      ...prev,
-                      posicion: parseInt(e.target.value),
-                    }))
-                  }
-                >
-                  {posiciones.map((pos) => (
-                    <option key={pos.id} value={pos.id}>
-                      {pos.nombre.replace(/_/g, " ")}
-                    </option>
-                  ))}
-                </Select>
-              </FormControl>
-            </VStack>
-          </ModalBody>
-          <ModalFooter>
-            <Button colorScheme="teal" mr={3} onClick={crearJugador}>
-              Crear
-            </Button>
-            <Button variant="ghost" onClick={() => setIsModalOpen(false)}>
-              Cancelar
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </Box>
   );
 };

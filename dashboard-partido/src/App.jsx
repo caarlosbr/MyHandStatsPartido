@@ -15,7 +15,7 @@ function App() {
         <Route path="/nuevo-partido" element={<DashboardPartido />} />
         <Route path="/jugadores" element={<Jugadores />} />
         <Route path="/seleccionar-equipo" element={<SeleccionEquipo />} />
-        <Route path="/dashboard-partido-pruebas" element={<DashboardPartidoPruebas />} />
+{/*         <Route path="/dashboard-partido-pruebas" element={<DashboardPartidoPruebas />} /> */}      
       </Routes>
     </BrowserRouter>
   );

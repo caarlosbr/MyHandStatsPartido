@@ -22,7 +22,6 @@ const SeleccionEquipo = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const token = localStorage.getItem('token');
-
   useEffect(() => {
     fetch('https://myhandstats.onrender.com/club/equipos', {
       headers: {
@@ -34,6 +33,7 @@ const SeleccionEquipo = () => {
         return res.json();
       })
       .then((data) => {
+        console.log('Datos recibidos de equipos:', data); 
         if (Array.isArray(data)) {
           setEquipos(data);
         } else {
@@ -80,9 +80,22 @@ const SeleccionEquipo = () => {
               _hover={{ boxShadow: 'lg', transform: 'translateY(-2px)' }}
               transition="0.2s"
             >
-              <Text fontSize="xl" fontWeight="bold" color="#014C4C" mb={2}>
+              <Text fontSize="xl" fontWeight="bold" color="#014C4C" mb={1}>
                 {equipo.nombre}
               </Text>
+              <Text fontSize="md" color="gray.600" mb={1}>
+                <Box as="span" fontWeight="bold" color="#014C4C">
+                  Categoría:
+                </Box>{' '}
+                {equipo.categoria || 'No especificada'}
+              </Text>
+              <Text fontSize="sm" color="gray.500" mb={3}>
+                <Box as="span" fontWeight="bold" color="#014C4C">
+                  Descripción:
+                </Box>{' '}
+                {equipo.descripcion || 'Sin descripción'}
+              </Text>
+
               <Button
                 colorScheme="teal"
                 variant="solid"
