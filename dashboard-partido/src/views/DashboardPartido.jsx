@@ -51,13 +51,13 @@ const DashboardPartido = () => {
     let interval = null;
     if (activo) {
       interval = setInterval(() => {
-        setSegundos((prev) => (prev < 1800 ? prev + 1 : 1800));
+        setSegundos((prev) => (prev < 3600 ? prev + 1 : 3600));
       }, 1000);
     } else {
-      clearInterval(interval);
-    }
-    return () => clearInterval(interval);
-  }, [activo]);
+          clearInterval(interval);
+        }
+        return () => clearInterval(interval);
+      }, [activo]);
 
   // Creamos una función para formatear el tiempo en minutos y segundos
   const formatoTiempo = () => {
@@ -148,9 +148,9 @@ const DashboardPartido = () => {
           ? `${jugadorSeleccionado.dorsal} - ${jugadorSeleccionado.nombre}`
           : 'Selecciona un jugador antes de realizar una acción, para las acciones de gol en contra no es necesario.',
         status: jugadorSeleccionado ? 'success' : 'warning',
-        duration: 3000,
+        duration: 2500,
         isClosable: true,
-        position: 'top-right',
+        position: 'top-left',
       });
     } else {
       toast({
@@ -162,9 +162,9 @@ const DashboardPartido = () => {
           ? `${jugadorSeleccionado.dorsal} - ${jugadorSeleccionado.nombre}`
           : 'Selecciona un jugador antes de realizar una acción',
         status: jugadorSeleccionado ? 'success' : 'warning',
-        duration: 3000,
+        duration: 2000,
         isClosable: true,
-        position: 'top-right',
+        position: 'top-left',
       });
     }
   }, [jugadorSeleccionado, partidoIniciado]);
@@ -248,7 +248,7 @@ const DashboardPartido = () => {
         status: 'error',
         duration: 3000,
         isClosable: true,
-        position: 'top-right'
+        position: 'top-left'
       });
       return;
     }
@@ -267,14 +267,15 @@ const DashboardPartido = () => {
     return result.isConfirmed;
   };
 
-const handleFinalizarParte = async () => {
+  const handleFinalizarParte = async () => {
     if (await confirmar("¿Estás seguro de finalizar la parte?")) {
-      setActivo(false);
-      setSegundos(1800); 
-      setParte((prev) => (prev === 1 ? 2 : prev)); 
+      setActivo(false); // pausa el cronómetro
+      setParte((prev) => (prev === 1 ? 2 : prev)); // pasa a la segunda parte
       Swal.fire("Parte finalizada", "Puedes comenzar la siguiente parte", "success");
     }
   };
+
+
 
 
 const handleFinalizarPartido = async () => {
