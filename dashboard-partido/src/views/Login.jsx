@@ -19,27 +19,56 @@ const Login = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = async (email, password) => {
-    try {
-      setError("");
+const handleLogin = async (email, password) => {
+  try {
+    const res = await fetch("https://myhandstats.onrender.com/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email, password })
+    });
 
-      const response = await fetch("https://myhandstats.onrender.com/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
+    const data = await res.json();
 
-      if (!response.ok) throw new Error("Credenciales inválidas");
-
-      const data = await response.json();
-      localStorage.setItem("token", data.access_token);
-      navigate("/seleccionar-equipo");
-    } catch (error) {
-      setError(error.message || "Error al iniciar sesión");
+    if (!res.ok || !data.access_token) {
+      throw new Error("Credenciales incorrectas");
     }
-  };
+
+    const token = data.access_token;
+    localStorage.setItem("token", token); // Guardamos el token
+console.log("Token en SeleccionEquipo:", token);
+
+    // Obtenemos el perfil para verificar el rol
+    const perfilRes = await fetch("https://myhandstats.onrender.com/usuario/perfil", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const perfil = await perfilRes.json();
+
+    // Verificamos el rol dentro de perfil.info
+    if (perfil.info.rol !== "usuario") {
+      localStorage.removeItem("token"); // Eliminamos token si no tiene acceso
+      alert("Acceso denegado. Solo los usuarios con rol 'usuario' pueden acceder.");
+      return;
+    }
+
+    // Rol válido, guardamos si hace falta más info
+    localStorage.setItem("rol", perfil.info.rol);
+    localStorage.setItem("nombre", perfil.info.nombre);
+    localStorage.setItem("email", perfil.info.email);
+
+    // Redirigimos al dashboard
+    navigate("/seleccionar-equipo");
+
+  } catch (err) {
+    alert(err.message || "Error al iniciar sesión");
+  }
+};
+
+
 
   const handleCredentialResponse = async (response) => {
     try {
