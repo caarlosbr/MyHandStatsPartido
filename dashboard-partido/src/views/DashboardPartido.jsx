@@ -388,7 +388,11 @@ const crearJugadoresPartido = async (convocados, equipoId, partidoId) => {
       paradas: 0, lanzamiento_ed: 0, lanzamiento_li: 0, lanzamiento_c: 0, lanzamiento_pi: 0,
       lanzamiento_ext_ld: 0, lanzamiento_ext_li: 0, lanzamiento_ext_c: 0,
       exclusion_2_min: 0, tarjetas_azules: 0, fallo_pase: 0, fallo_recepcion: 0,
-      pasos: 0, falta_en_ataque: 0, dobles: 0, invasion_area: 0, blocaje: 0, robo: 0
+      pasos: 0, falta_en_ataque: 0, dobles: 0, invasion_area: 0, blocaje: 0, robo: 0,
+      lanzamiento_en_contra_ei: 0, lanzamiento_en_contra_ed: 0, lanzamiento_en_contra_li: 0,
+      lanzamiento_en_contra_c: 0, lanzamiento_en_contra_ld: 0, lanzamiento_en_contra_pi: 0,
+      lanzamiento_en_contra_7m: 0, gol_en_contra_ei: 0, gol_en_contra_ed: 0,
+      gol_en_contra_li: 0, gol_en_contra_c: 0, gol_en_contra_ld: 0, gol_en_contra_pi: 0, gol_en_contra_7m: 0,
     };
 
     try {
