@@ -38,6 +38,8 @@ const DashboardPartido = () => {
   const [parte, setParte] = useState(1);
   const [golesEnContra, setGolesEnContra] = useState([]);
   const { isOpen: isGolesContraOpen, onOpen: onGolesContraOpen, onClose: onGolesContraClose } = useDisclosure();
+  const [lanzamientosEnContra, setLanzamientosEnContra] = useState([]);
+  const {isOpen: isLanzamientosContraOpen, onOpen: onLanzamientosContraOpen, onClose: onLanzamientosContraClose } = useDisclosure();
   const toast = useToast();
   const hasMounted = useRef(false);
   const navigate = useNavigate();
@@ -120,13 +122,13 @@ const DashboardPartido = () => {
   useEffect(() => {
     const tiposPorFase = {
       "ofensiva": ["goles", "lanzamiento", "perdida"],
-      "defensiva": ["recuperacion", "amonestacion", "gol_en_contra"],
+      "defensiva": ["recuperacion", "amonestacion", "gol_en_contra", "lanzamiento_en_contra"],
       "contra_ataque": ["goles", "lanzamiento", "perdida"],
-      "repliegue": ["gol_en_contra", "amonestacion"],
+      "repliegue": ["gol_en_contra", "amonestacion", "lanzamiento_en_contra", "recuperacion","amonestacion"],
       "superioridad_ofensiva": ["goles", "lanzamiento", "perdida"],
-      "superioridad_defensiva": ["recuperacion", "gol_en_contra"],
+      "superioridad_defensiva": ["recuperacion", "gol_en_contra", "lanzamiento_en_contra","amonestacion"],
       "inferioridad_ofensiva": ["lanzamiento", "perdida", "gol"],
-      "inferioridad_defensiva\n": ["gol_en_contra", "amonestacion"]
+      "inferioridad_defensiva\n": ["gol_en_contra", "amonestacion", "lanzamiento_en_contra","recuperacion"],
     };
     const tipos = tiposPorFase[faseSeleccionada] || [];
     const filtradas = acciones.filter(acc => tipos.includes(acc.tipo_accion));
@@ -501,6 +503,25 @@ const obtenerGolesEnContra = async () => {
   }
 };
 
+const obtenerLanzamientosEnContra = async () => {
+  const token = localStorage.getItem("token");
+  try {
+    const res = await fetch(
+      "https://myhandstats.onrender.com/acciones/filtrar?tipo_accion=lanzamiento_en_contra",
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const data = await res.json();
+    if (Array.isArray(data)) {
+      setLanzamientosEnContra(data);
+      onLanzamientosContraOpen();
+    }
+  } catch (err) {
+    console.error("Error al cargar lanzamientos en contra", err);
+    Swal.fire("Error", "No se pudieron cargar los lanzamientos en contra", "error");
+  }
+};
+
+
 
   const acortarNombre = (nombre) => nombre.slice(0, 6);
 
@@ -762,15 +783,26 @@ const obtenerGolesEnContra = async () => {
           )}
           
           {["defensiva", "repliegue", "superioridad_defensiva", "inferioridad_defensiva\n"].includes(faseSeleccionada) && (
-          <Button
-            size="sm"
-            colorScheme="red"
-            mb={3}
-            ml={2}
-            onClick={obtenerGolesEnContra}
-          >
-            Ver Goles en Contra
-          </Button>
+            <>
+              <Button
+                size="sm"
+                colorScheme="red"
+                mb={3}
+                onClick={obtenerGolesEnContra}
+              >
+                Ver Goles en Contra
+              </Button>
+
+              <Button
+                size="sm"
+                colorScheme="red"
+                mb={3}
+                ml={2}
+                onClick={obtenerLanzamientosEnContra}
+              >
+                Ver Lanzamientos en Contra
+              </Button>
+            </>
           )}
 
 
@@ -778,7 +810,7 @@ const obtenerGolesEnContra = async () => {
           <SimpleGrid columns={[2, 3, 4]} spacingX={3} spacingY={4} mb={6}>
           {accionesFiltradas
             .filter((accion) =>
-              accion.tipo_accion !== "lanzamiento" && accion.tipo_accion !== "goles" && accion.tipo_accion !== "gol_en_contra"
+              accion.tipo_accion !== "lanzamiento" && accion.tipo_accion !== "goles" && accion.tipo_accion !== "gol_en_contra" && accion.tipo_accion !== "lanzamiento_en_contra"
             )
             .map((accion) => (
               <Button
@@ -973,6 +1005,48 @@ const obtenerGolesEnContra = async () => {
           </ModalBody>
           <ModalFooter>
             <Button onClick={onGolesContraClose}>Cerrar</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal isOpen={isLanzamientosContraOpen} onClose={onLanzamientosContraClose} size="xl" isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader textAlign="center" bg="red.500" color="white">
+            Lanzamientos en Contra
+            {jugadorSeleccionado && (
+              <Text fontSize="sm" fontWeight="normal" color="white" mt={1}>
+                {jugadorSeleccionado.dorsal} – {jugadorSeleccionado.nombre}
+              </Text>
+            )}
+          </ModalHeader>
+          <ModalBody>
+            <SimpleGrid columns={[2, 3, 4]} spacing={4} mb={6}>
+              {lanzamientosEnContra.map((accion) => (
+                <Button
+                  key={accion.id}
+                  size="sm"
+                  variant="outline"
+                  bg="white"
+                  _hover={{ bg: "gray.100" }}
+                  whiteSpace="normal"         
+                  wordBreak="break-word"       
+                  textAlign="center"
+                  px={1}                      
+                  py={7}                        
+                  m={1}                         
+                  onClick={() => {
+                    handleAccion(accion);
+                    onLanzamientosContraClose();
+                  }}
+                >
+                  {accion.nombre.replaceAll("_", " ")}
+                </Button>
+              ))}
+            </SimpleGrid>
+          </ModalBody>
+          <ModalFooter>
+            <Button onClick={onLanzamientosContraClose}>Cerrar</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
