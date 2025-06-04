@@ -1,5 +1,5 @@
 // src/components/SidebarCollapsible.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Flex,
@@ -22,6 +22,7 @@ import {
   FaUserCircle,
   FaBars,
   FaArrowLeft,
+  FaTachometerAlt, // Ícono sugerido para “Dashboard Partido”
 } from 'react-icons/fa';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 
@@ -55,16 +56,48 @@ const Sidebar = () => {
 
   const IconMotion = motion(Icon);
 
-  const menuItems = [
-    { label: 'Seleccionar Equipo', icon: FaHome, to: '/seleccionar-equipo' },
-    { label: 'Jugadores',         icon: FaUsers, to: '/jugadores' },
+  // 1) Leemos id_equipo del localStorage (o de donde guardes el equipo seleccionado).
+  //    Esto se recalculará cada vez que el componente renderice.
+  const idEquipoSeleccionado = useMemo(() => {
+    return localStorage.getItem('id_equipo') || null;
+  }, [location.pathname]); 
+  // (se puede incluso memorizar sin depender de pathname, pero así se recarga si cambias de ruta)
+
+  // 2) Definimos los ítems base (siempre presentes)
+  const baseMenuItems = [
+    {
+      label: 'Seleccionar Equipo',
+      icon: FaHome,
+      to: '/seleccionar-equipo',
+    },
+    {
+      label: 'Jugadores',
+      icon: FaUsers,
+      to: '/jugadores',
+    },
   ];
 
-  // ===============================
-  // useEffect para cargar perfil
-  // ===============================
+  // 3) Si existe un equipo seleccionado (idEquipoSeleccionado != null),
+  //    añadimos el “Dashboard Partido” justo después de “Jugadores”.
+  const menuItems = useMemo(() => {
+    // Copiamos los ítems base
+    const items = [...baseMenuItems];
+
+    if (idEquipoSeleccionado) {
+      items.push({
+        label: 'Dashboard Partido',
+        icon: FaTachometerAlt,
+        to: '/nuevo-partido', // Ajusta esta ruta a donde esté tu DashboardPartido
+      });
+    }
+    return items;
+  }, [idEquipoSeleccionado]);
+
+  // ────────────────────────────────────────────────────────────────────
+  // useEffect para cargar perfil (igual que antes, sin bucles)
+  // ────────────────────────────────────────────────────────────────────
   useEffect(() => {
-    // Si estoy en Login ("/") o en Registrar ("/registrar"), NO intento fetch ni redirect
+    // Si estamos en login ("/") o registrar ("/registrar"), no cargamos perfil
     if (location.pathname === '/' || location.pathname === '/registrar') {
       setLoadingUser(false);
       return;
@@ -72,7 +105,6 @@ const Sidebar = () => {
 
     const token = localStorage.getItem('token');
     if (!token) {
-      // Si no hay token y NO estoy ya en "/", redirijo a login
       if (location.pathname !== '/') {
         navigate('/', { replace: true });
       }
@@ -80,7 +112,7 @@ const Sidebar = () => {
       return;
     }
 
-    // Tengo token y no estoy en rutas públicas: intento cargar perfil
+    // Petición al backend: GET /usuario/perfil
     fetch('https://myhandstats.onrender.com/usuario/perfil', {
       method: 'GET',
       headers: {
@@ -89,7 +121,6 @@ const Sidebar = () => {
     })
       .then((res) => {
         if (!res.ok) {
-          // Si devuelvo 401 ó 403, borro token y redirijo a "/"
           throw new Error('No autorizado');
         }
         return res.json();
@@ -127,7 +158,7 @@ const Sidebar = () => {
       overflowY="auto"
       transition="width 0.2s"
       display={
-        // Ocultamos por completo en móvil, o si estamos en "/" o "/registrar"
+        // Ocultamos el sidebar en móvil (<md) o en rutas públicas ("/", "/registrar")
         baseSidebarWidth === '0px' ||
         location.pathname === '/' ||
         location.pathname === '/registrar'
@@ -186,7 +217,7 @@ const Sidebar = () => {
 
         <Divider borderColor={borderColor} />
 
-        {/* ─── ÍTEMS PRINCIPALES ─── */}
+        {/* ─── ÍTEMS PRINCIPALES (ahora incluyendo “Dashboard Partido” si idEquipoSeleccionado) ─── */}
         <VStack align="stretch" spacing={1}>
           {menuItems.map((item) => (
             <Box key={item.label} px={isCollapsed ? 0 : 2}>

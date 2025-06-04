@@ -616,8 +616,6 @@ const obtenerGolesEnContra = async () => {
   return (
     <Box p={4} minH="100vh" bg="white">
       <Flex align="center" justify="space-between" wrap="wrap" gap={4} mb={6}>
-        {/* Botón menú */}
-        <Icon as={FaBars} boxSize={6} cursor="pointer" />
 
         {/* Marcador con nombres */}
         <Flex align="center" justify="center" flex="1" gap={4}>
