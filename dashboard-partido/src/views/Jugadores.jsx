@@ -1,41 +1,22 @@
+// src/views/Jugadores.jsx
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Text,
   SimpleGrid,
-  IconButton,
   Avatar,
-  Button,
-  useBreakpointValue,
   Spinner,
-  useDisclosure,
   Flex,
-  Icon,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
-  FormControl,
-  Input,
   VStack,
-  Select,
+  useBreakpointValue,
 } from "@chakra-ui/react";
-import { useEffect, useState } from "react";
-import { FaPlus, FaUser, FaBars } from "react-icons/fa";
-import Sidebar from "../components/Sidebar";
+import { FaUser } from "react-icons/fa";
 
 const Jugadores = () => {
-  const gridCols = useBreakpointValue({ base: 1, sm: 2, md: 3, lg: 4 });
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
   const [equipoSeleccionado, setEquipoSeleccionado] = useState("");
   const [jugadores, setJugadores] = useState([]);
   const [loading, setLoading] = useState(false);
   const [posiciones, setPosiciones] = useState([]);
-
   const [nuevoJugador, setNuevoJugador] = useState({
     nombre: "",
     fecha_nacimiento: "",
@@ -43,6 +24,8 @@ const Jugadores = () => {
     posicion: "",
     foto: null,
   });
+
+  const gridCols = useBreakpointValue({ base: 1, sm: 2, md: 3, lg: 4 });
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -125,37 +108,33 @@ const Jugadores = () => {
         });
         cargarJugadores(); // refrescar lista
       })
-      .catch((err) =>  err);
+      .catch((err) => err);
   };
 
-const cargarJugadores = () => {
-  const token = localStorage.getItem("token");
-  const equipoId = localStorage.getItem("id_equipo");
+  const cargarJugadores = () => {
+    const token = localStorage.getItem("token");
+    const equipoId = localStorage.getItem("id_equipo");
+    if (!equipoId) return;
 
-  if (!equipoId) return;
+    setEquipoSeleccionado(equipoId);
+    setLoading(true);
 
-  setEquipoSeleccionado(equipoId);
-  setLoading(true);
-
-  fetch(`https://myhandstats.onrender.com/equipo/${equipoId}/jugadores`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
-    .then((res) => res.json())
-    .then((data) => {
-     // console.log("Datos recibidos de jugadores:", data); 
-      if (Array.isArray(data)) {
-        setJugadores(data);
-      } else {
-        // console.error("Respuesta inesperada:", data);
-        setJugadores([]);
-      }
+    fetch(`https://myhandstats.onrender.com/equipo/${equipoId}/jugadores`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     })
-    .catch((err) =>  err)
-    .finally(() => setLoading(false));
-};
-
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setJugadores(data);
+        } else {
+          setJugadores([]);
+        }
+      })
+      .catch((err) => err)
+      .finally(() => setLoading(false));
+  };
 
   const cargarPosiciones = () => {
     fetch("https://myhandstats.onrender.com/posiciones")
@@ -182,26 +161,28 @@ const cargarJugadores = () => {
 
   return (
     <Box p={4} position="relative">
-      <Sidebar isOpen={isOpen} onClose={onClose} />
-      <Flex align="center" justify="space-between" mb={8}>
-        <Icon as={FaBars} boxSize={6} onClick={onOpen} cursor="pointer" />
+      {/* 
+        Asegúrate de que NO quede ningún <Sidebar> ni <IconButton icon={<FaBars/>} /> aquí.
+        El único Sidebar que debe existir se renderiza desde App.jsx.
+      */}
+
+      <Flex align="center" justify="center" mb={8}>
         <Text fontSize="2xl" fontWeight="bold" color="#014C4C">
           Jugadores
         </Text>
-        <Box w="6" />
       </Flex>
 
       {loading ? (
         <Box textAlign="center" mt={10}>
           <Spinner size="xl" color="teal.600" />
         </Box>
-        ) : jugadores.length === 0 ? (
-          <Box textAlign="center" mt={10}>
-            <Text fontSize="lg" color="gray.600">
-              Aún no hay jugadores con ficha para este equipo.
-            </Text>
-          </Box>
-        ) : (
+      ) : jugadores.length === 0 ? (
+        <Box textAlign="center" mt={10}>
+          <Text fontSize="lg" color="gray.600">
+            Aún no hay jugadores con ficha para este equipo.
+          </Text>
+        </Box>
+      ) : (
         <SimpleGrid columns={gridCols} spacing={6}>
           {jugadores.map((jugador) => (
             <Box
@@ -231,17 +212,27 @@ const cargarJugadores = () => {
 
               <VStack align="start" spacing={2}>
                 <Text fontSize="sm" color="gray.700">
-                  <Box as="span" fontWeight="bold" color="#014C4C">Edad:</Box>{' '}
-                  {jugador.fecha_nac ? `${calcularEdad(jugador.fecha_nac)} años` : "—"}
+                  <Box as="span" fontWeight="bold" color="#014C4C">
+                    Edad:
+                  </Box>{" "}
+                  {jugador.fecha_nac
+                    ? `${calcularEdad(jugador.fecha_nac)} años`
+                    : "—"}
                 </Text>
                 <Text fontSize="sm" color="gray.700">
-                  <Box as="span" fontWeight="bold" color="#014C4C">Dorsal:</Box>{' '}
+                  <Box as="span" fontWeight="bold" color="#014C4C">
+                    Dorsal:
+                  </Box>{" "}
                   {jugador.dorsal || "—"}
                 </Text>
                 <Text fontSize="sm" color="gray.700">
-                  <Box as="span" fontWeight="bold" color="#014C4C">Posición:</Box>{' '}
+                  <Box as="span" fontWeight="bold" color="#014C4C">
+                    Posición:
+                  </Box>{" "}
                   {jugador.posiciones?.length > 0
-                    ? jugador.posiciones.map(p => p.nombre.replace(/_/g, " ")).join(", ")
+                    ? jugador.posiciones
+                        .map((p) => p.nombre.replace(/_/g, " "))
+                        .join(", ")
                     : "Sin posición"}
                 </Text>
               </VStack>

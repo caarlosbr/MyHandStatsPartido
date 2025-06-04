@@ -26,7 +26,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaBars } from "react-icons/fa";
 import AuthWrapper from "../components/AuthWrapper";
-import Sidebar from "../components/Sidebar";
 
 const SeleccionEquipo = () => {
   const [club, setClub] = useState({});
@@ -234,7 +233,6 @@ const SeleccionEquipo = () => {
           userSelect="none"
         />
 
-        <Sidebar isOpen={isOpen} onClose={onClose} />
 
         <Flex
           justify="space-between"
@@ -243,8 +241,7 @@ const SeleccionEquipo = () => {
           zIndex={1}
           position="relative"
         >
-          <Icon as={FaBars} boxSize={6} onClick={onOpen} cursor="pointer" />
-          <Heading size="lg" color="#014C4C">
+          <Heading size="lg" color="#014C4C" textAlign="center" w="100%" >
             Selecciona tu equipo
           </Heading>
           <Box w="6" />
