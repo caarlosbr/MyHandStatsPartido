@@ -87,7 +87,7 @@ const Sidebar = () => {
       items.push({
         label: 'Dashboard Partido',
         icon: FaTachometerAlt,
-        to: '/nuevo-partido', // Ajusta esta ruta a donde esté tu DashboardPartido
+        to: '/nuevo-partido', 
       });
     }
     return items;

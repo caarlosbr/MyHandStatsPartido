@@ -2,7 +2,7 @@ import { useState, useEffect,useRef  } from 'react';
 import {
   Box, Flex, Icon, Text, Button, Grid, SimpleGrid,
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  useDisclosure, VStack, useToast
+  useDisclosure, VStack, useToast,Spinner 
 } from '@chakra-ui/react';
 import { FaBars, FaPause, FaPlay } from 'react-icons/fa';
 import Swal from 'sweetalert2';
@@ -31,6 +31,7 @@ const DashboardPartido = () => {
   const [fasesJuego, setFasesJuego] = useState([]);
   const [convocados, setConvocados] = useState([]);
   const [jugadoresPartido, setJugadoresPartido] = useState([]);
+  const [isLoadingJugadores, setIsLoadingJugadores] = useState(false);
   const [lanzamientos, setLanzamientos] = useState([]);
   const {isOpen: isLanzamientoOpen, onOpen: onLanzamientoOpen, onClose: onLanzamientoClose} = useDisclosure();
   const [goles, setGoles] = useState([]);
@@ -376,9 +377,11 @@ const seleccionarConvocados = async () => {
   });
 };
 
-const crearJugadoresPartido = async (convocados, equipoId, partidoId) => {
+const crearJugadoresPartido = async (convocados, equipoId, partidoId, setIsLoadingJugadores, setJugadoresPartido) => {
   const token = localStorage.getItem("token");
   const jugadoresCreados = [];
+
+  setIsLoadingJugadores(true); // ⬅️ empieza la carga
 
   for (const jugador of convocados) {
     const payload = {
@@ -419,8 +422,9 @@ const crearJugadoresPartido = async (convocados, equipoId, partidoId) => {
 
   setJugadoresPartido(jugadoresCreados); 
   console.log("Jugadores del partido creados:", jugadoresCreados);
-};
 
+  setIsLoadingJugadores(false); 
+};
 
 
 
@@ -620,7 +624,7 @@ const obtenerLanzamientosEnContra = async () => {
               setPartidoSimulado(partido);
               setPartidoIniciado(true);
 
-              await crearJugadoresPartido(confirmados, partido.equipos_id, partido.id);
+await crearJugadoresPartido(confirmados, partido.equipos_id, partido.id, setIsLoadingJugadores, setJugadoresPartido);
               console.log(partido.equipos_id,partido.id);
             }
 
@@ -635,6 +639,24 @@ const obtenerLanzamientosEnContra = async () => {
 
 
   return (
+      <>
+    {isLoadingJugadores && (
+      <Box
+        position="fixed"
+        top="0"
+        left="0"
+        w="100vw"
+        h="100vh"
+        bg="rgba(255,255,255,0.7)"
+        zIndex="9999"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+      >
+        <Spinner size="xl" thickness="4px" speed="0.65s" color="#014C4C" />
+      </Box>
+    )}
+
     <Box p={4} minH="100vh" bg="white">
       <Flex align="center" justify="space-between" wrap="wrap" gap={4} mb={6}>
 
@@ -690,9 +712,48 @@ const obtenerLanzamientosEnContra = async () => {
 
       <Flex flexWrap="wrap" gap={6}>
         <Box minW="200px">
+          <Text fontWeight="bold" mb={1}>Porteros</Text>
+          <SimpleGrid columns={2} spacing={2} mb={4}>
+            {convocados
+              .filter(jugador =>
+                jugador.posiciones?.some(pos => pos.nombre.toLowerCase() === "portero")
+              )
+              .map((jugador) => {
+                const isSelected = jugadorSeleccionado?.id === jugador.id;
+
+                return (
+                  <Button
+                    key={jugador.id}
+                    h="52px"
+                    px={2}
+                    fontSize="sm"
+                    bg={isSelected ? "teal.700" : "#014C4C"}
+                    color="white"
+                    border={isSelected ? "2px solid #319795" : "none"}
+                    _hover={{ bg: isSelected ? "teal.600" : "#016666" }}
+                    onClick={() => {
+                      if (jugadorSeleccionado?.id === jugador.id) {
+                        setJugadorSeleccionado(null);
+                      } else {
+                        setJugadorSeleccionado(jugador);
+                      }
+                    }}
+                    textAlign="center"
+                    whiteSpace="normal"
+                  >
+                    {jugador.dorsal} <br /> {jugador.nombre}
+                  </Button>
+                );
+              })}
+          </SimpleGrid>
+
           <Text fontWeight="bold" mb={1}>En Pista</Text>
           <SimpleGrid columns={3} spacing={2} mb={4}>
-            {convocados.map((jugador) => {
+            {convocados
+              .filter(jugador =>
+                !jugador.posiciones?.some(pos => pos.nombre.toLowerCase() === "portero")
+              )
+              .map((jugador) => {
               const isSelected = jugadorSeleccionado?.id === jugador.id;
 
               return (
@@ -1053,6 +1114,7 @@ const obtenerLanzamientosEnContra = async () => {
 
 
     </Box>
+    </>
   );
 };
 
