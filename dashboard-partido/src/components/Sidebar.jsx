@@ -40,7 +40,7 @@ const Sidebar = () => {
     baseSidebarWidth === '0px'
       ? '0px'
       : isCollapsed
-      ? '50px'
+      ? '60px'
       : '260px';
 
   const bgCard        = useColorModeValue('white',    'gray.900');
