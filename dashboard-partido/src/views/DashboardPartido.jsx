@@ -293,40 +293,46 @@ const handleFinalizarPartido = async () => {
 
   
 
-  const crearPartido = async (nombreRival) => {
-    const token = localStorage.getItem("token");
-    const equipoId = 27;
+const crearPartido = async (nombreRival) => {
+  const token = localStorage.getItem("token");
+  const equipoId = localStorage.getItem("id_equipo"); // 🔁 ID dinámico
 
-    const body = {
-      fecha: new Date().toISOString(),
-      goles_id_equipo: 0,
-      goles_id_equiporival: 0,
-      equiporival_id: nombreRival,
-      equipos_id: equipoId
-    };
+  if (!equipoId) {
+    Swal.fire("Error", "No se encontró el ID del equipo. Asegúrate de haber iniciado sesión correctamente.", "error");
+    return null;
+  }
 
-    try {
-      const res = await fetch(`https://myhandstats.onrender.com/equipo/${equipoId}/partido`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(body)
-      });
-
-      const data = await res.json();
-      if (res.ok && data.id) {
-        setPartidoSimulado(data); // guardamos el objeto completo (incluye id)
-        return data;
-      } else {
-        throw new Error("No se pudo crear el partido");
-      }
-    } catch (err) {
-      Swal.fire("Error", "Error al crear el partido", "error");
-      return null;
-    }
+  const body = {
+    fecha: new Date().toISOString(),
+    goles_id_equipo: 0,
+    goles_id_equiporival: 0,
+    equiporival_id: nombreRival,
+    equipos_id: parseInt(equipoId)
   };
+
+  try {
+    const res = await fetch(`https://myhandstats.onrender.com/equipo/${equipoId}/partido`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(body)
+    });
+
+    const data = await res.json();
+    if (res.ok && data.id) {
+      setPartidoSimulado(data);
+      return data;
+    } else {
+      throw new Error(data.detail || "No se pudo crear el partido");
+    }
+  } catch (err) {
+    Swal.fire("Error", err.message || "Error al crear el partido", "error");
+    return null;
+  }
+};
+
 
 
 const seleccionarConvocados = async () => {
@@ -552,9 +558,11 @@ const obtenerLanzamientosEnContra = async () => {
             if (!nombreRival) return;
 
             const token = localStorage.getItem("token");
-            const response = await fetch(`https://myhandstats.onrender.com/equipo/27/jugadores`, {
+            const equipoId = localStorage.getItem("id_equipo");
+            const response = await fetch(`https://myhandstats.onrender.com/equipo/${equipoId}/jugadores`, {
               headers: { Authorization: `Bearer ${token}` }
             });
+
             const data = await response.json();
             if (!Array.isArray(data) || data.length === 0) {
               Swal.fire("Sin jugadores", "No hay jugadores disponibles", "error");

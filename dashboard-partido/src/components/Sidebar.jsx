@@ -315,8 +315,10 @@ const Sidebar = () => {
               cursor="pointer"
               onClick={() => {
                 localStorage.removeItem('token');
+                localStorage.removeItem('id_equipo');  
                 navigate('/', { replace: true });
               }}
+
             >
               <Box bg={iconBg} p={2} borderRadius="full">
                 <IconMotion
