@@ -72,26 +72,44 @@ const DashboardPartido = () => {
 
   // Creamos el efecto de carga inicial de datos
   useEffect(() => {
-    let interval = null;
+    let interval;
 
     if (activo) {
       interval = setInterval(() => {
         setSegundos((prev) => {
-          // Detener en 60 minutos
+          // Mensaje al llegar a 30 minutos
+          if (prev === 1799) {
+            toast({
+              title: "Fin de la primera parte",
+              description: "El cronómetro se ha pausado en 30:00",
+              status: "info",
+              duration: 3000,
+              isClosable: true,
+              position: "top-left"
+            });
+          }
+
+          // Mensaje al llegar a 60 minutos
+          if (prev === 3599) {
+            toast({
+              title: "Fin del partido",
+              description: "Tiempo cumplido: 60:00",
+              status: "success",
+              duration: 4000,
+              isClosable: true,
+              position: "top-left"
+            });
+          }
+
           if (prev >= 3600) return 3600;
-
-          // Pausar en 30 minutos exactos (esperar cambio de parte manual)
           if (prev === 1800) return prev;
-
           return prev + 1;
         });
       }, 1000);
-    } else {
-      clearInterval(interval);
     }
 
     return () => clearInterval(interval);
-  }, [activo]);
+  }, [activo, toast]);
 
 
   // Creamos una función para formatear el tiempo en minutos y segundos
@@ -387,7 +405,7 @@ const seleccionarConvocados = async () => {
           card.setAttribute("data-id", j.id);
 
           const posicion = j.posiciones?.[0]?.nombre?.toLowerCase() || "sin_posicion";
-          const color = coloresPorPosicion[posicion] || "#9CA3AF";
+          const color = coloresPorPosicion[posicion] || "#f7f4f4";
 
           Object.assign(card.style, {
             backgroundColor: color,
@@ -667,23 +685,23 @@ if (!partidoIniciado) {
                 data.forEach(j => {
                   const card = document.createElement("div");
                   card.classList.add("jugador-card");
-                  card.setAttribute("data-id", j.id); // <- CLAVE
+                  card.setAttribute("data-id", j.id); 
 
                   Object.assign(card.style, {
-                    backgroundColor: "#014C4C",
-                    color: "white",
+                    backgroundColor: "#f7f4f4",
+                    color: "black",
                     padding: "10px",
                     margin: "5px",
                     borderRadius: "8px",
                     cursor: "pointer",
                     textAlign: "center",
-                    fontWeight: "bold",
+                    fontWeight: "",
                     minWidth: "100px",
                     userSelect: "none",
                     opacity: "0.6"
                   });
 
-                  card.innerHTML = `<div>#${j.dorsal}</div><div>${j.nombre}</div>`;
+                  card.innerHTML = `<b>${j.nombre}</b><p>#${j.dorsal}</p>`;
 
                   card.addEventListener("click", () => {
                     card.classList.toggle("seleccionado");
