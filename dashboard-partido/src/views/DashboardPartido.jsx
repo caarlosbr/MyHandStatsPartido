@@ -21,6 +21,9 @@ const coloresPorPosicion = {
   sin_posicion: "#9CA3AF"
 };
 
+// Constantes para los tiempos de las partes del partido
+const TIEMPO_PRIMERA_PARTE = 1800; // 30 minutos en segundos
+const TIEMPO_SEGUNDA_PARTE = 3600; // 60 minutos en segundos
 
 // Creamos el componente DashboardPartido con todos los hooks y estados necesarios
 const DashboardPartido = () => {
@@ -70,15 +73,26 @@ const DashboardPartido = () => {
   // Creamos el efecto de carga inicial de datos
   useEffect(() => {
     let interval = null;
+
     if (activo) {
       interval = setInterval(() => {
-        setSegundos((prev) => (prev < 3600 ? prev + 1 : 3600));
+        setSegundos((prev) => {
+          // Detener en 60 minutos
+          if (prev >= 3600) return 3600;
+
+          // Pausar en 30 minutos exactos (esperar cambio de parte manual)
+          if (prev === 1800) return prev;
+
+          return prev + 1;
+        });
       }, 1000);
     } else {
-          clearInterval(interval);
-        }
-        return () => clearInterval(interval);
-      }, [activo]);
+      clearInterval(interval);
+    }
+
+    return () => clearInterval(interval);
+  }, [activo]);
+
 
   // Creamos una función para formatear el tiempo en minutos y segundos
   const formatoTiempo = () => {
