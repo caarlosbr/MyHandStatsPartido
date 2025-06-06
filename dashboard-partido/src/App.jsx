@@ -9,7 +9,7 @@ import Registrar from './views/Registrar';
 import SeleccionarEquipo from './views/SeleccionarEquipo';
 import Jugadores from './views/Jugadores';
 import DashboardPartido from './views/DashboardPartido';
-
+import Perfil from './views/Perfil';
 function App() {
   // Hook para obtener la ruta actual
   const location = useLocation();
@@ -41,10 +41,7 @@ function App() {
           <Route path="/seleccionar-equipo" element={<SeleccionarEquipo />} />
           <Route path="/jugadores" element={<Jugadores />} />
           <Route path="/nuevo-partido" element={<DashboardPartido />} />
-          {/**
-             * Agrega aquí el resto de tus rutas, por ejemplo:
-             * <Route path="/otra-vista" element={<OtraVista />} />
-             */}
+          <Route path="/perfil" element={<Perfil />} />
         </Routes>
       </Box>
     </Flex>

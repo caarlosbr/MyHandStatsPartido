@@ -13,6 +13,7 @@
     "@chakra-ui/react": "^2.10.9",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@supabase/supabase-js": "^2.49.10",
     "axios": "^1.9.0",
     "chart.js": "^4.4.9",
     "framer-motion": "^6.5.1",
