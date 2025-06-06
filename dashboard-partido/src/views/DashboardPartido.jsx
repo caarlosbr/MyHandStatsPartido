@@ -212,68 +212,66 @@ const DashboardPartido = () => {
   };
 
 
-  const handleAccion = (accion) => {
-    if (accion.tipo_accion !== "gol_en_contra" && !jugadorSeleccionado) {
-      Swal.fire("Jugador no seleccionado", "Selecciona un jugador para registrar esta acción", "error");
-      return;
-    }
+const handleAccion = async (accion) => {
+  if (accion.tipo_accion !== "gol_en_contra" && !jugadorSeleccionado) {
+    Swal.fire("Jugador no seleccionado", "Selecciona un jugador para registrar esta acción", "error");
+    return;
+  }
 
-    const jugadorPartido = jugadoresPartido.find(jp => jp.jugadores_id === jugadorSeleccionado?.id);
-    if (!jugadorPartido && accion.tipo_accion !== "gol_en_contra") {
-      Swal.fire("Error", "No se encontró el jugador en el partido", "error");
-      return;
-    }
+  const jugadorPartido = jugadoresPartido.find(jp => jp.jugadores_id === jugadorSeleccionado?.id);
+  const posicion = jugadorSeleccionado?.posiciones?.[0]?.nombre?.toLowerCase();
 
-    const minuto = formatoTiempo();
-    const fase = fasesJuego.find(f => f.nombre === faseSeleccionada);
-    if (!fase) {
-      Swal.fire("Error", "Fase de juego no válida", "error");
-      return;
-    }
+  if (
+    ["gol_en_contra", "lanzamiento_en_contra"].includes(accion.tipo_accion) &&
+    posicion !== "portero"
+  ) {
+    Swal.fire("Acción inválida", "Solo los porteros pueden registrar esta acción", "error");
+    return;
+  }
 
-    // ✅ Lógica para sumar al marcador
-    if (accion.tipo_accion === "goles") {
-      setGolesLocal(prev => prev + 1);
-    } else if (accion.tipo_accion === "gol_en_contra") {
-      setGolesVisitante(prev => prev + 1);
-    }
+  const minuto = formatoTiempo();
+  const fase = fasesJuego.find(f => f.nombre === faseSeleccionada);
+  if (!fase) {
+    Swal.fire("Error", "Fase de juego no válida", "error");
+    return;
+  }
 
-    // Guardar acción en la BD si no es gol en contra sin jugador
-    guardarAccionPartido({
-      minuto,
-      jugadores_partido_id: jugadorPartido?.id || null, // null si es gol_en_contra sin jugador
-      acciones_id: accion.id,
-      fases_juego_id: fase.id
-    });
+  // POST -> guardar acción y obtener su ID
+  const nuevaAccion = await guardarAccionPartido({
+    minuto,
+    jugadores_partido_id: jugadorPartido?.id || null,
+    acciones_id: accion.id,
+    fases_juego_id: fase.id
+  });
 
-    const nuevaAccion = {
+  if (!nuevaAccion) return; // aborta si hubo error
+
+  setAccionesRecientes(prev => [
+    {
+      id: nuevaAccion.id, // importante para poder eliminarla luego
       jugador: jugadorSeleccionado?.nombre || "Sin jugador",
       tipo: accion.nombre
-    };
-    setAccionesRecientes(prev => [nuevaAccion, ...prev.slice(0, 4)]);
+    },
+    ...prev.slice(0, 4)
+  ]);
 
-    toast({
-      title: 'Acción registrada',
-      description: `Se registró: ${accion.nombre.replaceAll('_', ' ')}${jugadorSeleccionado ? ` - ${jugadorSeleccionado.dorsal} ${jugadorSeleccionado.nombre}` : ''}`,
-      status: 'info',
-      duration: 2500,
-      isClosable: true,
-      position: 'bottom-left'
-    });
+  // marcador + toast
+  if (accion.tipo_accion === "goles") {
+    setGolesLocal(prev => prev + 1);
+  } else if (accion.tipo_accion === "gol_en_contra") {
+    setGolesVisitante(prev => prev + 1);
+  }
 
+  toast({
+    title: 'Acción registrada',
+    description: `Se registró: ${accion.nombre.replaceAll('_', ' ')}${jugadorSeleccionado ? ` - ${jugadorSeleccionado.dorsal} ${jugadorSeleccionado.nombre}` : ''}`,
+    status: 'info',
+    duration: 2500,
+    isClosable: true,
+    position: 'bottom-left'
+  });
+};
 
-    if (!jugadorSeleccionado) {
-      toast({
-        title: 'Jugador no seleccionado',
-        description: 'Debes seleccionar un jugador para esta acción',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-        position: 'top-left'
-      });
-      return;
-    }
-  };
 
 
 
@@ -490,12 +488,16 @@ const guardarAccionPartido = async (accion) => {
 
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || "Error al guardar la acción");
+
     console.log("✅ Acción guardada:", data);
+    return data; // <-- importante
   } catch (error) {
     console.error("❌ Error guardando acción:", error.message);
     Swal.fire("Error", error.message, "error");
+    return null;
   }
 };
+
 
 const obtenerLanzamientos = async () => {
   const token = localStorage.getItem("token");
@@ -572,6 +574,39 @@ const obtenerLanzamientosEnContra = async () => {
   }
 };
 
+const eliminarAccion = async (idAccion) => {
+  const confirmacion = await Swal.fire({
+    title: "¿Eliminar acción?",
+    text: "Esta acción se eliminará permanentemente",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Sí, eliminar",
+    cancelButtonText: "Cancelar",
+  });
+
+  if (!confirmacion.isConfirmed) return;
+
+  try {
+    const token = localStorage.getItem("token");
+    const res = await fetch(`https://myhandstats.onrender.com/accion_partido/${idAccion}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (res.ok) {
+      setAccionesRecientes((prev) => prev.filter((a) => a.id !== idAccion));
+      Swal.fire("Eliminado", "La acción ha sido eliminada", "success");
+    } else {
+      const data = await res.json();
+      throw new Error(data.detail || "Error al eliminar la acción");
+    }
+  } catch (error) {
+    console.error(error);
+    Swal.fire("Error", error.message || "No se pudo eliminar la acción", "error");
+  }
+};
 
 
   const acortarNombre = (nombre) => nombre.slice(0, 6);
@@ -922,11 +957,55 @@ if (!partidoIniciado) {
                 <Text fontSize="sm">
                   <strong>{accion.tipo}</strong> - {accion.jugador}
                 </Text>
-                <Button size="xs" colorScheme="red" onClick={() => {
-                  setAccionesRecientes(prev => prev.filter((_, index) => index !== i));
-                }}>
+                <Button
+                  size="xs"
+                  colorScheme="red"
+                  onClick={async () => {
+                    const confirmacion = await Swal.fire({
+                      title: "¿Eliminar acción?",
+                      text: "Esta acción se eliminará permanentemente",
+                      icon: "warning",
+                      showCancelButton: true,
+                      confirmButtonText: "Sí, eliminar",
+                      cancelButtonText: "Cancelar",
+                    });
+
+                    if (!confirmacion.isConfirmed) return;
+
+                    try {
+                      const token = localStorage.getItem("token");
+                      const res = await fetch(`https://myhandstats.onrender.com/accion_partido/${accion.id}`, {
+                        method: "DELETE",
+                        headers: {
+                          Authorization: `Bearer ${token}`,
+                        },
+                      });
+
+                      if (!res.ok) {
+                        const data = await res.json();
+                        throw new Error(data.detail || "No se pudo eliminar la acción");
+                      }
+
+                      // 🧠 Ajuste del marcador al eliminar
+                      const tipo = accion.tipo.toLowerCase();
+                      if (tipo.includes("gol") && !tipo.includes("contra")) {
+                        setGolesLocal((prev) => Math.max(prev - 1, 0));
+                      } else if (tipo.includes("gol") && tipo.includes("contra")) {
+                        setGolesVisitante((prev) => Math.max(prev - 1, 0));
+                      }
+
+                      setAccionesRecientes((prev) => prev.filter((a) => a.id !== accion.id));
+                      Swal.fire("Eliminado", "La acción ha sido eliminada", "success");
+                    } catch (error) {
+                      console.error(error);
+                      Swal.fire("Error", error.message || "Error al eliminar la acción", "error");
+                    }
+                  }}
+
+                >
                   X
                 </Button>
+
               </Flex>
             ))}
           </VStack>
