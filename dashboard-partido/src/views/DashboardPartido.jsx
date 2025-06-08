@@ -77,39 +77,16 @@ const DashboardPartido = () => {
     if (activo) {
       interval = setInterval(() => {
         setSegundos((prev) => {
-          // Mensaje al llegar a 30 minutos
-          if (prev === 1799) {
-            toast({
-              title: "Fin de la primera parte",
-              description: "El cronómetro se ha pausado en 30:00",
-              status: "info",
-              duration: 3000,
-              isClosable: true,
-              position: "top-left"
-            });
-          }
-
-          // Mensaje al llegar a 60 minutos
-          if (prev === 3599) {
-            toast({
-              title: "Fin del partido",
-              description: "Tiempo cumplido: 60:00",
-              status: "success",
-              duration: 4000,
-              isClosable: true,
-              position: "top-left"
-            });
-          }
-
           if (prev >= 3600) return 3600;
-          if (prev === 1800) return prev;
+          if (parte === 1 && prev === 1800) return prev; // solo pausa en 30:00 si es primera parte
           return prev + 1;
         });
-      }, 1000);
+      }, 15);
     }
 
     return () => clearInterval(interval);
-  }, [activo, toast]);
+  }, [activo, parte]);
+
 
 
   // Creamos una función para formatear el tiempo en minutos y segundos
@@ -118,6 +95,34 @@ const DashboardPartido = () => {
     const sec = String(segundos % 60).padStart(2, '0');
     return `${min}:${sec}`;
   };
+
+  useEffect(() => {
+    if (segundos === 1800 && parte === 1) {
+      setActivo(false); // pausa automáticamente
+      toast({
+        title: "Fin de la primera parte",
+        description: "Cambia a la segunda parte para continuar",
+        status: "info",
+        duration: 3000,
+        isClosable: true,
+        position: "top-left"
+      });
+    }
+
+    if (segundos === 3600 && parte === 2) {
+      setActivo(false); // para el cronómetro al final del partido
+      toast({
+        title: "Fin del partido",
+        description: "Tiempo cumplido: 60:00",
+        status: "success",
+        duration: 4000,
+        isClosable: true,
+        position: "top-left"
+      });
+    }
+  }, [segundos, parte]);
+
+
 
   // Si el partido no ha sido simulado, cargamos los datos del equipo local y sus jugadores
   useEffect(() => {
@@ -185,6 +190,10 @@ const DashboardPartido = () => {
     const filtradas = acciones.filter(acc => tipos.includes(acc.tipo_accion));
     setAccionesFiltradas(filtradas);
   }, [faseSeleccionada, acciones]);
+
+  const bloquearPlay = 
+    (parte === 1 && segundos >= 1800) ||
+    (parte === 2 && segundos >= 3600);
 
 
   useEffect(() => {
@@ -318,14 +327,25 @@ const handleAccion = async (accion) => {
     return result.isConfirmed;
   };
 
-  const handleFinalizarParte = async () => {
-    if (await confirmar("¿Estás seguro de finalizar la parte?")) {
-      setActivo(false); // pausa el cronómetro
-      setParte((prev) => (prev === 1 ? 2 : prev)); // pasa a la segunda parte
-      Swal.fire("Parte finalizada", "Puedes comenzar la siguiente parte", "success");
-    }
-  };
+const handleFinalizarParte = async () => {
+  if (parte === 1 && segundos < 1800) {
+    toast({
+      title: "No se puede finalizar",
+      description: "Debes esperar a que termine la primera parte (30:00).",
+      status: "warning",
+      duration: 3000,
+      isClosable: true,
+      position: "top-left"
+    });
+    return;
+  }
 
+  if (await confirmar("¿Estás seguro de finalizar la parte?")) {
+    setActivo(false); // pausa el cronómetro
+    setParte((prev) => (prev === 1 ? 2 : prev)); // pasa a la segunda parte
+    Swal.fire("Parte finalizada", "Puedes comenzar la siguiente parte", "success");
+  }
+};
 
 
 
@@ -832,14 +852,23 @@ if (!partidoIniciado) {
           align="center"
           justify="center"
           boxSize={10}
-          bg="#014C4C"
+          bg={bloquearPlay ? "gray.400" : "#014C4C"}
           borderRadius="full"
           color="white"
-          cursor="pointer"
-          onClick={() => setActivo(prev => !prev)}
+          cursor={bloquearPlay ? "not-allowed" : "pointer"}
+          opacity={bloquearPlay ? 0.5 : 1}
+          pointerEvents={bloquearPlay ? "none" : "auto"}
+          onClick={() => {
+            if (!bloquearPlay) {
+              setActivo(prev => !prev);
+            }
+          }}
         >
           <Icon as={activo ? FaPause : FaPlay} fontSize="md" />
         </Flex>
+
+
+
 
         {/* Tiempo y parte */}
         <Flex direction="column" align="center">
@@ -848,9 +877,12 @@ if (!partidoIniciado) {
         </Flex>
 
         {/* Botón finalizar */}
-        <Button variant="outline" size="sm" onClick={handleFinalizarParte}>
-          Acabar Parte
-        </Button>
+        {parte === 1 && (
+          <Button variant="outline" size="sm" onClick={handleFinalizarParte}>
+            Acabar Parte
+          </Button>
+        )}
+
       </Flex>
 
 

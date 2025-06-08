@@ -61,7 +61,7 @@ const SeleccionEquipo = () => {
         return res.json();
       })
       .then((data) => {
-        setClub(data.info ? data.info[0] : data); // Ajusta según tu API
+        setClub(data.info ? data.info[0] : data); 
       })
       .catch((err) => {
         console.error(
