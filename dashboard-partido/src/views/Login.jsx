@@ -1,3 +1,4 @@
+// Imortarmos todo lo necesario
 import {
   Box,
   Button,
@@ -11,6 +12,7 @@ import {
   Alert,
   AlertIcon,
   Spinner,
+  useToast 
 } from "@chakra-ui/react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -19,12 +21,13 @@ import avatar1 from "../assets/avatars/avatar_1.png";
 import avatar2 from "../assets/avatars/avatar_2.png";
 import avatar3 from "../assets/avatars/avatar_3.png";
 import avatar4 from "../assets/avatars/avatar_4.png";
+import Swal from "sweetalert2";
 
-// Avatares falsos
+// Avatares 
 const avatars = [avatar1, avatar2, avatar3, avatar4];
+const clientId = "580062200389-hblem47late6qfggkg4iv8gnba20ih91.apps.googleusercontent.com"; // tu client ID (cambiar a env, cuando esté en producción)
 
-const clientId = "580062200389-hblem47late6qfggkg4iv8gnba20ih91.apps.googleusercontent.com"; // tu client ID
-
+// Componente Login, para manejar el inicio de sesión, esto incluye también el inicio de sesión con Google
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,6 +38,7 @@ const Login = () => {
   const handleLogin = async (email, password) => {
     setIsLoading(true);
     setError("");
+
     try {
       const response = await fetch("https://myhandstats.onrender.com/login", {
         method: "POST",
@@ -49,7 +53,38 @@ const Login = () => {
       }
 
       const data = await response.json();
-      localStorage.setItem("token", data.access_token);
+      const token = data.access_token;
+      localStorage.setItem("token", token);
+
+      const perfilRes = await fetch("https://myhandstats.onrender.com/usuario/perfil", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const perfil = await perfilRes.json();
+
+      if (perfil.info.rol !== "usuario") {
+        localStorage.removeItem("token");
+
+        // Detenemos la carga ANTES del SweetAlert
+        setIsLoading(false);
+
+        await Swal.fire({
+          icon: "error",
+          title: "Acceso denegado",
+          text: "Solo los usuarios con rol 'usuario' pueden acceder.",
+          confirmButtonColor: "#014C4C",
+        });
+
+        return;
+      }
+
+
+      localStorage.setItem("rol", perfil.info.rol);
+      localStorage.setItem("nombre", perfil.info.nombre);
+      localStorage.setItem("email", perfil.info.email);
+
       navigate("/seleccionar-equipo");
     } catch (error) {
       setError(error.message || "Error al iniciar sesión");
@@ -58,6 +93,9 @@ const Login = () => {
     }
   };
 
+
+
+  // Función para manejar el inicio de sesión con Google
   const handleGoogleLogin = async (credentialResponse) => {
     setIsLoading(true);
     setError("");
@@ -75,14 +113,15 @@ const Login = () => {
       }
       const data = await response.json();
       localStorage.setItem("token", data.access_token);
-      navigate("/seleccionar-equipo");
+      navigate("/seleccionar-equipo"); // Redirigir a la página de selección de equipo
     } catch (error) {
-      setError(error.message || "Error al iniciar sesión con Google");
+      setError(error.message || "Error al iniciar sesión con Google"); // Manejo de errores
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Renderizamos el componente de inicio de sesión
   return (
     <GoogleOAuthProvider clientId={clientId}>
       <Box
@@ -108,10 +147,11 @@ const Login = () => {
             alignItems="center"
             justifyContent="center"
           >
-            <Spinner size="xl" thickness="4px" speed="0.65s" color="#014C4C" />
+            <Spinner size="xl" thickness="4px" speed="0.65s" color="#014C4C" /> 
           </Box>
         )}
 
+        {/* Box para  la imagen arriba a izquierda*/}
         <Box
           position="absolute"
           top="0"
@@ -125,6 +165,7 @@ const Login = () => {
           zIndex={0}
         />
 
+        {/* Contenedor principal para el formulario principal */}
         <Container maxW="container.sm" zIndex={1}>
           <Box
             bg="white"
@@ -133,6 +174,8 @@ const Login = () => {
             p={{ base: 6, md: 10 }}
             textAlign="center"
           >
+
+            {/* Mostramos en heading para el login */}
             <Heading mb={2} fontSize="2xl" color="#014C4C">
               Inicia Sesión
             </Heading>
@@ -149,6 +192,7 @@ const Login = () => {
               </Alert>
             )}
 
+            {/* Formulario */}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -188,6 +232,7 @@ const Login = () => {
               </Stack>
             </form>
 
+             {/* Boton del login con Google */} 
             <Box mt={4} width="100%">
               <GoogleLogin
                 onSuccess={handleGoogleLogin}
@@ -200,6 +245,7 @@ const Login = () => {
               />
             </Box>
 
+            {/* Footer */}  
             <Box mt={10}>
               <Text fontWeight="bold" fontSize="lg">
                 Únete{" "}
