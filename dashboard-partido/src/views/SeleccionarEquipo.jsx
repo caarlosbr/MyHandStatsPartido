@@ -1,3 +1,4 @@
+// Importamos los componentes necesarios de Chakra UI y React
 import {
   Box,
   Heading,
@@ -24,9 +25,9 @@ import {
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaBars } from "react-icons/fa";
 import AuthWrapper from "../components/AuthWrapper";
 
+// Componente SeleccionEquipo para seleccionar un equipo, este componente permite a los usuarios seleccionar un equipo
 const SeleccionEquipo = () => {
   const [club, setClub] = useState({});
   const [equipos, setEquipos] = useState([]);
