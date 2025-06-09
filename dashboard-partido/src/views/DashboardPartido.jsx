@@ -123,7 +123,7 @@ const DashboardPartido = () => {
           if (parte === 1 && prev === 1800) return prev; // solo pausa en 30:00 si es primera parte
           return prev + 1;
         });
-      }, 1000); // poner a 15 en pruebas
+      }, 15); // poner a 15 en pruebas
     }
     return () => clearInterval(interval);
   }, [activo, parte]);
