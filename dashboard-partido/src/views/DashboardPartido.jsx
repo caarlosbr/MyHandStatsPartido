@@ -384,7 +384,7 @@ const handleFinalizarPartido = async () => {
 
   const crearPartido = async (nombreRival) => {
     const token = localStorage.getItem("token");
-    const equipoId = 27;
+    const equipoId = localStorage.getItem("id_equipo");
 
     const body = {
       fecha: new Date().toISOString(),
@@ -706,7 +706,8 @@ if (!partidoIniciado) {
           if (!nombreRival) return;
 
           const token = localStorage.getItem("token");
-          const response = await fetch(`https://myhandstats.onrender.com/equipo/27/jugadores`, {
+          const equipoId = localStorage.getItem("id_equipo");
+          const response = await fetch(`https://myhandstats.onrender.com/equipo/${equipoId}/jugadores`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           const data = await response.json();
