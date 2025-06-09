@@ -21,6 +21,53 @@ const coloresPorPosicion = {
   sin_posicion: "#9CA3AF"
 };
 
+const nombresLegibles = {
+  golesli: "Gol Izquierda",
+  golesld: "Gol Derecha",
+  golesei: "Gol Ext. Izquierda",
+  golesed: "Gol Ext. Derecha",
+  golespi: "Gol Punto Izq.",
+  golesc: "Gol Centro",
+  goles7m: "Gol 7 metros",
+  lanzamiento_7m: "Lanzamiento 7m",
+  lanzamiento_ed: "Lanz. Ext. Derecha",
+  lanzamiento_ei: "Lanz. Ext. Izquierda",
+  lanzamiento_ld: "Lanz. Lateral Der.",
+  lanzamiento_li: "Lanz. Lateral Izq.",
+  lanzamiento_c: "Lanz. Central",
+  lanzamiento_pi: "Lanz. Pivote",
+  lanzamiento_ext_li: "Lanz. Ext. Izq.",
+  lanzamiento_ext_ld: "Lanz. Ext. Der.",
+  lanzamiento_ext_c: "Lanz. Ext. Centro",
+  gol_en_contra_ei: "Gol Contra Ext. Izq.",
+  gol_en_contra_ed: "Gol Contra Ext. Der.",
+  gol_en_contra_li: "Gol Contra Lateral Izq.",
+  gol_en_contra_c: "Gol Contra Centro",
+  gol_en_contra_ld: "Gol Contra Lateral Der.",
+  gol_en_contra_pi: "Gol Contra Punto Izq.",
+  gol_en_contra_7m: "Gol Contra 7m",
+  lanzamiento_en_contra_ei: "Lanz. Contra Ext. Izq.",
+  lanzamiento_en_contra_ed: "Lanz. Contra Ext. Der.",
+  lanzamiento_en_contra_li: "Lanz. Contra Lateral Izq.",
+  lanzamiento_en_contra_c: "Lanz. Contra Centro",
+  lanzamiento_en_contra_ld: "Lanz. Contra Lateral Der.",
+  lanzamiento_en_contra_pi: "Lanz. Contra Pivote",
+  lanzamiento_en_contra_7m: "Lanz. Contra 7m",
+  exclusion_2_min: "Exclusión 2 min",
+  tarjetas_amarillas: "Tarjeta Amarilla",
+  tarjetas_rojas: "Tarjeta Roja",
+  tarjetas_azules: "Tarjeta Azul",
+  fallo_pase: "Fallo de Pase",
+  fallo_recepcion: "Fallo de Recepción",
+  pasos: "Pasos",
+  falta_en_ataque: "Falta en Ataque",
+  dobles: "Dobles",
+  invasion_area: "Invasión de Área",
+  blocaje: "Blocaje",
+  robo: "Robo"
+};
+
+
 // Constantes para los tiempos de las partes del partido
 const TIEMPO_PRIMERA_PARTE = 1800; // 30 minutos en segundos
 const TIEMPO_SEGUNDA_PARTE = 3600; // 60 minutos en segundos
@@ -403,7 +450,7 @@ const seleccionarConvocados = async () => {
 
     Swal.fire({
       title: 'Seleccionar Convocados',
-      html: `<div id="convocados-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:10px; max-height:300px; overflow:auto;"></div>`,
+      html: `<div id="convocados-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:10px; max-height:400px; overflow:auto;"></div>`,
       willOpen: () => {
         const container = document.getElementById("convocados-grid");
 
@@ -436,7 +483,7 @@ const seleccionarConvocados = async () => {
             cursor: "pointer",
             textAlign: "center",
             fontWeight: "bold",
-            minWidth: "100px",
+            minWidth: "150px",
             userSelect: "none"
           });
 
@@ -1161,7 +1208,7 @@ if (!partidoIniciado) {
                 fontSize="sm"
                 lineHeight="1.2"
               >
-                {accion.nombre.replaceAll("_", " ")}
+                {nombresLegibles[accion.nombre] || accion.nombre.replaceAll("_", " ")}
               </Button>
           ))}
 
@@ -1176,7 +1223,7 @@ if (!partidoIniciado) {
         </Box>
       </Flex>
 
-      <Modal isOpen={isOpen} onClose={onClose} size="xl" isCentered>
+{/*       <Modal isOpen={isOpen} onClose={onClose} size="xl" isCentered>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader textAlign="center" bg="#014C4C" color="white">
@@ -1232,9 +1279,9 @@ if (!partidoIniciado) {
             <Button colorScheme="teal" onClick={handleGuardarGol}>Guardar</Button>
           </ModalFooter>
         </ModalContent>
-      </Modal>
+      </Modal> */}
 
-      <Modal isOpen={isLanzamientoOpen} onClose={onLanzamientoClose} size="xl" isCentered>
+      <Modal isOpen={isLanzamientoOpen} onClose={onLanzamientoClose} size="3xl" isCentered>
         <ModalOverlay />
         <ModalContent>
         <ModalHeader textAlign="center" bg="#014C4C" color="white">
@@ -1262,7 +1309,7 @@ if (!partidoIniciado) {
                 fontSize="sm"
                 lineHeight="1.2"
               >
-                {accion.nombre.replaceAll("_", " ")}
+                {nombresLegibles[accion.nombre] || accion.nombre.replaceAll("_", " ")}
               </Button>
             ))}
           </SimpleGrid>
@@ -1274,7 +1321,7 @@ if (!partidoIniciado) {
         </ModalContent>
       </Modal>
 
-      <Modal isOpen={isGolesOpen} onClose={onGolesClose} size="xl" isCentered>
+      <Modal isOpen={isGolesOpen} onClose={onGolesClose} size="3xl" isCentered>
         <ModalOverlay />
         <ModalContent>
         <ModalHeader textAlign="center" bg="#014C4C" color="white">
@@ -1289,21 +1336,28 @@ if (!partidoIniciado) {
           <ModalBody>
             <SimpleGrid columns={[2, 3, 4]} spacing={3}>
               {goles.map((accion) => (
-                <Button
-                  key={accion.id}
-                  size="sm"
-                  variant="outline"
-                  bg="white"
-                  _hover={{ bg: "gray.100" }}
-                  _active={{ bg: "white", transform: "none" }}
-                  _focus={{ boxShadow: "none", bg: "white" }}
-                  onClick={() => {
-                    handleAccion(accion);
-                    onGolesClose();
-                  }}
-                >
-                  {accion.nombre.replaceAll("_", " ")}
-                </Button>
+              <Button
+                key={accion.id}
+                size="md"
+                variant="outline"
+                bg="white"
+                _hover={{ bg: "gray.100" }}
+                _active={{ bg: "white", transform: "none" }}
+                _focus={{ boxShadow: "none", bg: "white" }}
+                onClick={() => {
+                  handleAccion(accion);
+                  onGolesClose();
+                }}
+                whiteSpace="normal"
+                wordBreak="break-word"
+                textAlign="center"
+                px={2}
+                h="50px"
+                fontSize="sm"
+                lineHeight="1.2"
+              >
+                {nombresLegibles[accion.nombre] || accion.nombre.replaceAll("_", " ")}
+              </Button>
               ))}
             </SimpleGrid>
           </ModalBody>
@@ -1313,7 +1367,7 @@ if (!partidoIniciado) {
         </ModalContent>
       </Modal>
 
-      <Modal isOpen={isGolesContraOpen} onClose={onGolesContraClose} size="xl" isCentered>
+      <Modal isOpen={isGolesContraOpen} onClose={onGolesContraClose} size="3xl" isCentered>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader textAlign="center" bg="red.500" color="white">
@@ -1322,19 +1376,26 @@ if (!partidoIniciado) {
           <ModalBody>
             <SimpleGrid columns={[2, 3, 4]} spacing={3}>
               {golesEnContra.map((accion) => (
-                <Button
-                  key={accion.id}
-                  size="sm"
-                  variant="outline"
-                  bg="white"
-                  _hover={{ bg: "gray.100" }}
-                  onClick={() => {
-                    handleAccion(accion);
-                    onGolesContraClose();
-                  }}
-                >
-                  {accion.nombre.replaceAll("_", " ")}
-                </Button>
+              <Button
+                key={accion.id}
+                size="sm"
+                variant="outline"
+                bg="white"
+                _hover={{ bg: "gray.100" }}
+                onClick={() => {
+                  handleAccion(accion);
+                  onGolesContraClose();
+                }}
+                whiteSpace="normal"
+                wordBreak="break-word"
+                textAlign="center"
+                px={2}
+                h="50px"
+                fontSize="sm"
+                lineHeight="1.2"
+              >
+                {nombresLegibles[accion.nombre] || accion.nombre.replaceAll("_", " ")}
+              </Button>
               ))}
             </SimpleGrid>
           </ModalBody>
@@ -1344,7 +1405,7 @@ if (!partidoIniciado) {
         </ModalContent>
       </Modal>
 
-      <Modal isOpen={isLanzamientosContraOpen} onClose={onLanzamientosContraClose} size="xl" isCentered>
+      <Modal isOpen={isLanzamientosContraOpen} onClose={onLanzamientosContraClose} size="3xl" isCentered>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader textAlign="center" bg="red.500" color="white">
@@ -1375,7 +1436,8 @@ if (!partidoIniciado) {
                     onLanzamientosContraClose();
                   }}
                 >
-                  {accion.nombre.replaceAll("_", " ")}
+                {nombresLegibles[accion.nombre] || accion.nombre.replaceAll("_", " ")}
+
                 </Button>
               ))}
             </SimpleGrid>
