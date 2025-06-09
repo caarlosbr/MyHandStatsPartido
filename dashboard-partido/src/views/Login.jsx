@@ -35,11 +35,13 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Función para manejar el inicio de sesión
   const handleLogin = async (email, password) => {
     setIsLoading(true);
     setError("");
 
     try {
+      // Validamos que el email y la contraseña no estén vacíos
       const response = await fetch("https://myhandstats.onrender.com/login", {
         method: "POST",
         headers: {
@@ -52,6 +54,7 @@ const Login = () => {
         throw new Error("Credenciales inválidas");
       }
 
+      // Si la respuesta es correcta, obtenemos el token y lo guardamos en localStorage
       const data = await response.json();
       const token = data.access_token;
       localStorage.setItem("token", token);
@@ -64,35 +67,34 @@ const Login = () => {
 
       const perfil = await perfilRes.json();
 
+      // Si el perfil no tiene rol de usuario, mostramos un SweetAlert y detenemos la carga	
       if (perfil.info.rol !== "usuario") {
         localStorage.removeItem("token");
 
         // Detenemos la carga ANTES del SweetAlert
         setIsLoading(false);
 
+        // Mostramos un SweetAlert con el mensaje de error
         await Swal.fire({
           icon: "error",
           title: "Acceso denegado",
           text: "Solo los usuarios con rol 'usuario' pueden acceder.",
           confirmButtonColor: "#014C4C",
         });
-
         return;
       }
 
-
+      // Guardamos los datos del perfil en localStorage
       localStorage.setItem("rol", perfil.info.rol);
       localStorage.setItem("nombre", perfil.info.nombre);
       localStorage.setItem("email", perfil.info.email);
-
-      navigate("/seleccionar-equipo");
+      navigate("/seleccionar-equipo"); // Redirigir a la página de selección de equipo
     } catch (error) {
       setError(error.message || "Error al iniciar sesión");
     } finally {
       setIsLoading(false);
     }
   };
-
 
 
   // Función para manejar el inicio de sesión con Google
