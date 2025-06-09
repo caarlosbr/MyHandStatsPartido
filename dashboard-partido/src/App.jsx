@@ -1,4 +1,4 @@
-// src/App.jsx
+// Importaciones necesarias
 import React from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Box, Flex } from '@chakra-ui/react';
@@ -10,29 +10,25 @@ import SeleccionarEquipo from './views/SeleccionarEquipo';
 import Jugadores from './views/Jugadores';
 import DashboardPartido from './views/DashboardPartido';
 import Perfil from './views/Perfil';
+
 function App() {
   // Hook para obtener la ruta actual
   const location = useLocation();
 
-  // Si la ruta es "/" o "/registrar", devolvemos false => no mostramos el sidebar
-  // En cualquier otra ruta devolvemos true => mostramos el sidebar
-  const shouldShowSidebar = !(
+  // Si la ruta es "/" o "/registrar", no mostramos el sidebar
+  // En cualquier otra ruta mostramos el sidebar
+  const mostrarSidebar = !(
     location.pathname === '/' ||
     location.pathname === '/registrar'
   );
 
   return (
     <Flex>
-      {/**
-         * Si shouldShowSidebar === true, renderizamos el SidebarCollapsible.
-         * Si es false, NO se renderiza y el Login/Registrar ocuparán todo el ancho.
-         */}
-      {shouldShowSidebar && <Sidebar />}
+      {/*Si mostrarSidebar es true, renderizamos el Sidebar, si es false, nose se renderiza y el Login/Registrar ocuparán todo el ancho. */}
+      {mostrarSidebar && <Sidebar />}
 
-      {/**
-         * El contenido principal (cajas de ruta) ocupa todo el espacio libre.
-         * Cuando no hay sidebar, <Box flex="1" p={4}> ocupará 100% del ancho.
-         * Cuando sí hay sidebar, se "superpone" por encima y no empuja nada.
+      {/* El contenido principal ocupa todo el espacio libre, cuando no hay sidebar, ocupará 100% del ancho.
+         * Cuando si hay sidebar, se superpone por encima y no empuja nada.
          */}
       <Box flex="1" p={4} pl="50px">
         <Routes>

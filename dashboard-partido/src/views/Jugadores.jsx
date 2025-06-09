@@ -1,4 +1,4 @@
-// src/views/Jugadores.jsx
+// Importamos lo necesario de Chakra UI y React
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -12,20 +12,14 @@ import {
 } from "@chakra-ui/react";
 import { FaUser } from "react-icons/fa";
 
+// Componente Jugadores para mostrar la lista de jugadores de un equipo
 const Jugadores = () => {
-  const [equipoSeleccionado, setEquipoSeleccionado] = useState("");
-  const [jugadores, setJugadores] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [posiciones, setPosiciones] = useState([]);
-  const [nuevoJugador, setNuevoJugador] = useState({
-    nombre: "",
-    fecha_nacimiento: "",
-    dorsal: "",
-    posicion: "",
-    foto: null,
-  });
-
-  const gridCols = useBreakpointValue({ base: 1, sm: 2, md: 3, lg: 4 });
+  const [equipoSeleccionado, setEquipoSeleccionado] = useState(""); // para almacenar el equipo seleccionado, con su respectivo id
+  const [jugadores, setJugadores] = useState([]); // para almacenar la lista de jugadores
+  const [loading, setLoading] = useState(false); // para mostrar el spinner mientras se cargan los datos
+  const [posiciones, setPosiciones] = useState([]); // para almacenar las posiciones disponibles
+  const [nuevoJugador, setNuevoJugador] = useState({nombre: "", fecha_nacimiento: "", dorsal: "", posicion: "", foto: null}); // para almacenar los datos del nuevo jugador
+  const gridCols = useBreakpointValue({ base: 1, sm: 2, md: 3, lg: 4 }); // número de columnas del grid según el tamaño de pantalla
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

@@ -1,3 +1,4 @@
+/* Importaciones */
 import { useState, useEffect,useRef  } from 'react';
 import {
   Box, Flex, Icon, Text, Button, Grid, SimpleGrid,
@@ -8,7 +9,7 @@ import { FaBars, FaPause, FaPlay, FaInfoCircle } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
 
-
+// Objeto de colores para definir la posición de los jugadores
 const coloresPorPosicion = {
   portero: "#014C4C",
   central: "#3C3C8C",
@@ -21,6 +22,7 @@ const coloresPorPosicion = {
   sin_posicion: "#9CA3AF"
 };
 
+// Objeto para traducir los tipos de acciones a nombres legibles
 const nombresLegibles = {
   golesli: "Gol Izquierda",
   golesld: "Gol Derecha",
@@ -74,45 +76,38 @@ const TIEMPO_SEGUNDA_PARTE = 3600; // 60 minutos en segundos
 
 // Creamos el componente DashboardPartido con todos los hooks y estados necesarios
 const DashboardPartido = () => {
-  const [jugadores, setJugadores] = useState([]);
-  const [acciones, setAcciones] = useState([]);
-  const [accionesFiltradas, setAccionesFiltradas] = useState([]);
-  const [accionesRecientes, setAccionesRecientes] = useState([]);
-  const [jugadorSeleccionado, setJugadorSeleccionado] = useState(null);
-  const [faseSeleccionada, setFaseSeleccionada] = useState("Ataque Posicional");
-  const [partidoIniciado, setPartidoIniciado] = useState(false);
-  const [modalTipo, setModalTipo] = useState(null);
-  const [zonaDisparo, setZonaDisparo] = useState(null);
-  const [zonaLanzador, setZonaLanzador] = useState(null);
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const [segundos, setSegundos] = useState(0);
-  const [activo, setActivo] = useState(false);
-  const [golesLocal, setGolesLocal] = useState(0);
-  const [golesVisitante, setGolesVisitante] = useState(0);
-  const [equipoRivalNombre, setEquipoRivalNombre] = useState("");
-  const [nombreEquipoLocal, setNombreEquipoLocal] = useState("MiEquipo");
-  const [fasesJuego, setFasesJuego] = useState([]);
-  const [convocados, setConvocados] = useState([]);
-  const [jugadoresPartido, setJugadoresPartido] = useState([]);
-  const [isLoadingJugadores, setIsLoadingJugadores] = useState(false);
-  const [iniciandoPartido, setIniciandoPartido] = useState(false);
-  const [lanzamientos, setLanzamientos] = useState([]);
-  const {isOpen: isLanzamientoOpen, onOpen: onLanzamientoOpen, onClose: onLanzamientoClose} = useDisclosure();
-  const [goles, setGoles] = useState([]);
-  const {isOpen: isGolesOpen, onOpen: onGolesOpen, onClose: onGolesClose} = useDisclosure();
-  const [parte, setParte] = useState(1);
-  const [golesEnContra, setGolesEnContra] = useState([]);
-  const { isOpen: isGolesContraOpen, onOpen: onGolesContraOpen, onClose: onGolesContraClose } = useDisclosure();
-  const [lanzamientosEnContra, setLanzamientosEnContra] = useState([]);
-  const [modalInfoOpen, setModalInfoOpen] = useState(false);
-  const abrirModalInfo = () => setModalInfoOpen(true);
-  const cerrarModalInfo = () => setModalInfoOpen(false);
-  const {isOpen: isLanzamientosContraOpen, onOpen: onLanzamientosContraOpen, onClose: onLanzamientosContraClose } = useDisclosure();
-  const toast = useToast();
-  const hasMounted = useRef(false);
-  const navigate = useNavigate();
-
-
+  const [jugadores, setJugadores] = useState([]); // para almacenar los jugadores del equipo
+  const [acciones, setAcciones] = useState([]); // para almacenar todas las acciones
+  const [accionesFiltradas, setAccionesFiltradas] = useState([]); // para filtrar por fase de juego
+  const [accionesRecientes, setAccionesRecientes] = useState([]); // para almacenar las últimas acciones guardadas
+  const [jugadorSeleccionado, setJugadorSeleccionado] = useState(null); // para almacenar el jugador seleccionado y poder realizar acciones con este
+  const [faseSeleccionada, setFaseSeleccionada] = useState("Ataque Posicional"); // fase de juego seleccionada, por defecto "Ataque Posicional"
+  const [partidoIniciado, setPartidoIniciado] = useState(false); // para indicar si el partido ha sido iniciado
+  const [segundos, setSegundos] = useState(0); // para almacenar el tiempo del cronómetro en segundos
+  const [activo, setActivo] = useState(false); // para indicar si el cronómetro está activo o no
+  const [golesLocal, setGolesLocal] = useState(0); // para almacenar los goles del equipo local
+  const [golesVisitante, setGolesVisitante] = useState(0); // para almacenar los goles del equipo rival 
+  const [equipoRivalNombre, setEquipoRivalNombre] = useState(""); // para almacenar el nombre del equipo rival
+  const [nombreEquipoLocal, setNombreEquipoLocal] = useState("MiEquipo"); // para almacenar el nombre del equipo local
+  const [fasesJuego, setFasesJuego] = useState([]); // para almacenar las fases de juego disponibles
+  const [convocados, setConvocados] = useState([]); // para almacenar los jugadores convocados
+  const [jugadoresPartido, setJugadoresPartido] = useState([]); // para almacenar los jugadores del partido en base a los convocados
+  const [isLoadingJugadores, setIsLoadingJugadores] = useState(false); // para indicar si los jugadores del partido están siendo cargados
+  const [iniciandoPartido, setIniciandoPartido] = useState(false); // para indicar si el partido está siendo iniciado
+  const [lanzamientos, setLanzamientos] = useState([]); // para almacenar los lanzamientos disponibles
+  const {isOpen: isLanzamientoOpen, onOpen: onLanzamientoOpen, onClose: onLanzamientoClose} = useDisclosure(); // para manejar el modal de lanzamientos
+  const [goles, setGoles] = useState([]); // para almacenar los goles disponibles
+  const {isOpen: isGolesOpen, onOpen: onGolesOpen, onClose: onGolesClose} = useDisclosure(); // para manejar el modal de goles
+  const [parte, setParte] = useState(1); // para indicar en qué parte del partido estamos (1 o 2), por defecto 1
+  const [golesEnContra, setGolesEnContra] = useState([]); // para almacenar los goles en contra
+  const { isOpen: isGolesContraOpen, onOpen: onGolesContraOpen, onClose: onGolesContraClose } = useDisclosure(); // para manejar el modal de goles en contra
+  const [lanzamientosEnContra, setLanzamientosEnContra] = useState([]); // para almacenar los lanzamientos en contra
+  const [modalInfoOpen, setModalInfoOpen] = useState(false); // para manejar el modal de información
+  const abrirModalInfo = () => setModalInfoOpen(true); // función para abrir el modal de información
+  const cerrarModalInfo = () => setModalInfoOpen(false); // función para cerrar el modal de información
+  const {isOpen: isLanzamientosContraOpen, onOpen: onLanzamientosContraOpen, onClose: onLanzamientosContraClose } = useDisclosure(); // para manejar el modal de lanzamientos en contra
+  const toast = useToast(); // para mostrar notificaciones
+  const navigate = useNavigate(); // para navegar entre rutas
 
   /* Pruebas */
   const [partidoSimulado, setPartidoSimulado] = useState(null);
@@ -128,21 +123,21 @@ const DashboardPartido = () => {
           if (parte === 1 && prev === 1800) return prev; // solo pausa en 30:00 si es primera parte
           return prev + 1;
         });
-      }, 15);
+      }, 1000); // poner a 15 en pruebas
     }
-
     return () => clearInterval(interval);
   }, [activo, parte]);
 
 
 
   // Creamos una función para formatear el tiempo en minutos y segundos
-  const formatoTiempo = () => {
-    const min = String(Math.floor(segundos / 60)).padStart(2, '0');
-    const sec = String(segundos % 60).padStart(2, '0');
-    return `${min}:${sec}`;
+  const formatoTiempo = () => { 
+    const min = String(Math.floor(segundos / 60)).padStart(2, '0'); // calcula los minutos
+    const sec = String(segundos % 60).padStart(2, '0'); // calcula los segundos 
+    return `${min}:${sec}`; // retorna el tiempo formateado
   };
 
+  // Creamos una función para iniciar el partido que si llega a 30:00 pausa automáticamente, y espera a que se cambie a la segunda parte
   useEffect(() => {
     if (segundos === 1800 && parte === 1) {
       setActivo(false); // pausa automáticamente
@@ -156,6 +151,7 @@ const DashboardPartido = () => {
       });
     }
 
+    // Si llega a 60:00 y es la segunda parte, para el cronómetro y muestra un mensaje de fin del partido, pero no acaba automáticamente el partido
     if (segundos === 3600 && parte === 2) {
       setActivo(false); // para el cronómetro al final del partido
       toast({
@@ -168,7 +164,6 @@ const DashboardPartido = () => {
       });
     }
   }, [segundos, parte]);
-
 
 
   // Si el partido no ha sido simulado, cargamos los datos del equipo local y sus jugadores
@@ -185,7 +180,7 @@ const DashboardPartido = () => {
   })
     .then(res => res.json())
     .then(data => {
-      if (data.nombre) setNombreEquipoLocal(data.nombre);
+      if (data.nombre) setNombreEquipoLocal(data.nombre); // asignamos el nombre del equipo local
     });
 
   // Obtenemos los jugadores del equipo  
@@ -194,7 +189,7 @@ const DashboardPartido = () => {
   })
     .then((res) => res.json())
     .then((data) => {
-      if (Array.isArray(data)) setJugadores(data);
+      if (Array.isArray(data)) setJugadores(data); // asignamos los jugadores del equipo
     });
 }, [partidoSimulado]);
 
@@ -277,27 +272,6 @@ const DashboardPartido = () => {
       });
     }
   }, [jugadorSeleccionado, partidoIniciado]);
-
-
-
-  // 
-  const handleGuardarGol = () => {
-    if (!zonaDisparo || (modalTipo === "gol" && !zonaLanzador)) {
-      Swal.fire("Faltan datos", "Debes seleccionar una zona de disparo y lanzador", "warning");
-      return;
-    }
-    const nuevaAccion = {
-      jugador: jugadorSeleccionado?.nombre || "Sin jugador",
-      tipo: "Gol",
-      zona: zonaDisparo
-    };
-    setAccionesRecientes(prev => [nuevaAccion, ...prev.slice(0, 4)]);
-    setGolesLocal((prev) => prev + 1);
-    onClose();
-    setZonaDisparo(null);
-    setZonaLanzador(null);
-    setModalTipo(null);
-  };
 
 
 const handleAccion = async (accion) => {
@@ -1222,64 +1196,6 @@ if (!partidoIniciado) {
           </Flex>
         </Box>
       </Flex>
-
-{/*       <Modal isOpen={isOpen} onClose={onClose} size="xl" isCentered>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader textAlign="center" bg="#014C4C" color="white">
-            Posición del Lanzamiento
-          </ModalHeader>
-          <ModalBody>
-            <Grid templateColumns="repeat(3, 1fr)" gap={2} mb={6} textAlign="center">
-              {Array.from({ length: 9 }, (_, i) => (
-                <Button
-                  key={i + 1}
-                  onClick={() => setZonaDisparo(i + 1)}
-                  variant={zonaDisparo === i + 1 ? "solid" : "outline"}
-                  colorScheme="teal"
-                >
-                  {i + 1}
-                </Button>
-              ))}
-            </Grid>
-            {modalTipo === "gol" && (
-              <>
-                <Text textAlign="center" fontWeight="bold" mb={2}>Posición del Lanzador</Text>
-                <Grid templateColumns="repeat(5, 1fr)" gap={2} mb={2}>
-                  {["Ala Izquierda", "Izquierda 6M", "Centro 6M", "Derecha 6M", "Ala Derecha"].map((pos) => (
-                    <Button
-                      key={pos}
-                      onClick={() => setZonaLanzador(pos)}
-                      variant={zonaLanzador === pos ? "solid" : "outline"}
-                      colorScheme="teal"
-                      size="sm"
-                    >
-                      {pos}
-                    </Button>
-                  ))}
-                </Grid>
-                <Grid templateColumns="repeat(3, 1fr)" gap={2}>
-                  {["Izquierda 9M", "Centro 9M", "Derecha 9M", "Medio Campo", "Campo a Campo"].map((pos) => (
-                    <Button
-                      key={pos}
-                      onClick={() => setZonaLanzador(pos)}
-                      variant={zonaLanzador === pos ? "solid" : "outline"}
-                      colorScheme="teal"
-                      size="sm"
-                    >
-                      {pos}
-                    </Button>
-                  ))}
-                </Grid>
-              </>
-            )}
-          </ModalBody>
-          <ModalFooter justifyContent="space-between">
-            <Button variant="ghost" onClick={onClose}>Cancelar</Button>
-            <Button colorScheme="teal" onClick={handleGuardarGol}>Guardar</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal> */}
 
       <Modal isOpen={isLanzamientoOpen} onClose={onLanzamientoClose} size="3xl" isCentered>
         <ModalOverlay />
