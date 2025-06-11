@@ -79,6 +79,16 @@ const mapeoGolesALanzamientos = {
   goles7m: "lanzamiento_7m",
 };
 
+const mapeoGolesEnContraALanzamientos = {
+  gol_en_contra_li: "lanzamiento_en_contra_li",
+  gol_en_contra_ld: "lanzamiento_en_contra_ld",
+  gol_en_contra_ei: "lanzamiento_en_contra_ei",
+  gol_en_contra_ed: "lanzamiento_en_contra_ed",
+  gol_en_contra_pi: "lanzamiento_en_contra_pi",
+  gol_en_contra_c: "lanzamiento_en_contra_c",
+  gol_en_contra_7m: "lanzamiento_en_contra_7m"
+};
+
 
 
 // Constantes para los tiempos de las partes del partido
@@ -286,40 +296,60 @@ const DashboardPartido = () => {
 
 
 const handleAccion = async (accion) => {
-  if (accion.tipo_accion !== "gol_en_contra" && !jugadorSeleccionado) {
-    Swal.fire("Jugador no seleccionado", "Selecciona un jugador para registrar esta acción", "error");
-    return;
+if (accion.tipo_accion !== "gol_en_contra" && !jugadorSeleccionado) {
+  Swal.fire("Jugador no seleccionado", "Selecciona un jugador para registrar esta acción", "error");
+  return;
+}
+
+const jugadorPartido = jugadoresPartido.find(jp => jp.jugadores_id === jugadorSeleccionado?.id);
+const posicion = jugadorSeleccionado?.posiciones?.[0]?.nombre?.toLowerCase();
+
+if (
+  ["gol_en_contra", "lanzamiento_en_contra"].includes(accion.tipo_accion) &&
+  posicion !== "portero"
+) {
+  Swal.fire("Acción inválida", "Solo los porteros pueden registrar esta acción", "error");
+  return;
+}
+
+const minuto = formatoTiempo();
+const fase = fasesJuego.find(f => f.nombre === faseSeleccionada);
+if (!fase) {
+  Swal.fire("Error", "Fase de juego no válida", "error");
+  return;
+}
+
+// Guarda la acción principal
+const nuevaAccion = await guardarAccionPartido({
+  minuto,
+  jugadores_partido_id: jugadorPartido?.id || null,
+  acciones_id: accion.id,
+  fases_juego_id: fase.id
+});
+
+if (!nuevaAccion) return;
+
+let idLanzamiento = null;
+
+// Si es gol en contra, registra también lanzamiento en contra correspondiente
+if (accion.tipo_accion === "gol_en_contra") {
+  const lanzamientoRelacionado = mapeoGolesEnContraALanzamientos[accion.nombre];
+  const accionLanzamiento = acciones.find(a => a.nombre === lanzamientoRelacionado);
+
+  if (accionLanzamiento) {
+    const lanzamiento = await guardarAccionPartido({
+      minuto,
+      jugadores_partido_id: jugadorPartido?.id || null,
+      acciones_id: accionLanzamiento.id,
+      fases_juego_id: fase.id
+    });
+
+    if (lanzamiento) {
+      idLanzamiento = lanzamiento.id;
+    }
   }
+}
 
-  const jugadorPartido = jugadoresPartido.find(jp => jp.jugadores_id === jugadorSeleccionado?.id);
-  const posicion = jugadorSeleccionado?.posiciones?.[0]?.nombre?.toLowerCase();
-
-  if (
-    ["gol_en_contra", "lanzamiento_en_contra"].includes(accion.tipo_accion) &&
-    posicion !== "portero"
-  ) {
-    Swal.fire("Acción inválida", "Solo los porteros pueden registrar esta acción", "error");
-    return;
-  }
-
-  const minuto = formatoTiempo();
-  const fase = fasesJuego.find(f => f.nombre === faseSeleccionada);
-  if (!fase) {
-    Swal.fire("Error", "Fase de juego no válida", "error");
-    return;
-  }
-
-  // Guarda la acción principal
-  const nuevaAccion = await guardarAccionPartido({
-    minuto,
-    jugadores_partido_id: jugadorPartido?.id || null,
-    acciones_id: accion.id,
-    fases_juego_id: fase.id
-  });
-
-  if (!nuevaAccion) return;
-
-  let idLanzamiento = null;
 
   // Si es un gol, también guarda el lanzamiento relacionado
   if (accion.tipo_accion === "goles") {
