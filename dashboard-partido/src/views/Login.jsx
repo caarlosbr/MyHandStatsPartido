@@ -75,12 +75,8 @@ const Login = () => {
         setIsLoading(false);
 
         // Mostramos un SweetAlert con el mensaje de error
-        await Swal.fire({
-          icon: "error",
-          title: "Acceso denegado",
-          text: "Solo los usuarios con rol 'usuario' pueden acceder.",
-          confirmButtonColor: "#014C4C",
-        });
+        setError("El acceso de admin y entrenador estándar está deshabilitado, solo está permitido el acceso mediante usuario estándar. Contacta con tu club.");
+
         return;
       }
 
