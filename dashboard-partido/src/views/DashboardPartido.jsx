@@ -69,6 +69,17 @@ const nombresLegibles = {
   robo: "Robo"
 };
 
+const mapeoGolesALanzamientos = {
+  golesli: "lanzamiento_li",
+  golesld: "lanzamiento_ld",
+  golesei: "lanzamiento_ei",
+  golesed: "lanzamiento_ed",
+  golespi: "lanzamiento_pi",
+  golesc: "lanzamiento_c",
+  goles7m: "lanzamiento_7m",
+};
+
+
 
 // Constantes para los tiempos de las partes del partido
 const TIEMPO_PRIMERA_PARTE = 1800; // 30 minutos en segundos
@@ -298,7 +309,7 @@ const handleAccion = async (accion) => {
     return;
   }
 
-  // POST -> guardar acción y obtener su ID
+  // Guarda la acción principal
   const nuevaAccion = await guardarAccionPartido({
     minuto,
     jugadores_partido_id: jugadorPartido?.id || null,
@@ -306,23 +317,43 @@ const handleAccion = async (accion) => {
     fases_juego_id: fase.id
   });
 
-  if (!nuevaAccion) return; // aborta si hubo error
+  if (!nuevaAccion) return;
 
+  let idLanzamiento = null;
+
+  // Si es un gol, también guarda el lanzamiento relacionado
+  if (accion.tipo_accion === "goles") {
+    setGolesLocal(prev => prev + 1);
+
+    const lanzamientoRelacionado = mapeoGolesALanzamientos[accion.nombre];
+    const accionLanzamiento = acciones.find(a => a.nombre === lanzamientoRelacionado);
+
+    if (accionLanzamiento) {
+      const lanzamiento = await guardarAccionPartido({
+        minuto,
+        jugadores_partido_id: jugadorPartido?.id || null,
+        acciones_id: accionLanzamiento.id,
+        fases_juego_id: fase.id
+      });
+
+      if (lanzamiento) {
+        idLanzamiento = lanzamiento.id;
+      }
+    }
+  } else if (accion.tipo_accion === "gol_en_contra") {
+    setGolesVisitante(prev => prev + 1);
+  }
+
+  // Solo mostramos la acción principal (el gol) en el log visual
   setAccionesRecientes(prev => [
     {
-      id: nuevaAccion.id, // importante para poder eliminarla luego
+      id: nuevaAccion.id,
+      idLanzamiento, // Se guarda para borrarlo si se elimina el gol
       jugador: jugadorSeleccionado?.nombre || "Sin jugador",
       tipo: accion.nombre
     },
     ...prev.slice(0, 4)
   ]);
-
-  // marcador + toast
-  if (accion.tipo_accion === "goles") {
-    setGolesLocal(prev => prev + 1);
-  } else if (accion.tipo_accion === "gol_en_contra") {
-    setGolesVisitante(prev => prev + 1);
-  }
 
   toast({
     title: 'Acción registrada',
@@ -333,6 +364,8 @@ const handleAccion = async (accion) => {
     position: 'bottom-left'
   });
 };
+
+
 
 
 
@@ -661,25 +694,40 @@ const eliminarAccion = async (idAccion) => {
 
   try {
     const token = localStorage.getItem("token");
-    const res = await fetch(`https://myhandstats.onrender.com/accion_partido/${idAccion}`, {
+
+    const accionOriginal = accionesRecientes.find(a => a.id === idAccion);
+
+    // Eliminar acción principal
+    await fetch(`https://myhandstats.onrender.com/accion_partido/${idAccion}`, {
       method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+      headers: { Authorization: `Bearer ${token}` },
     });
 
-    if (res.ok) {
-      setAccionesRecientes((prev) => prev.filter((a) => a.id !== idAccion));
-      Swal.fire("Eliminado", "La acción ha sido eliminada", "success");
-    } else {
-      const data = await res.json();
-      throw new Error(data.detail || "Error al eliminar la acción");
+    // Eliminar lanzamiento asociado si existe
+    if (accionOriginal?.idLanzamiento) {
+      await fetch(`https://myhandstats.onrender.com/accion_partido/${accionOriginal.idLanzamiento}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
     }
+
+    // Actualiza marcador
+    if (accionOriginal?.tipo?.startsWith("goles")) {
+      setGolesLocal(prev => Math.max(prev - 1, 0));
+    } else if (accionOriginal?.tipo?.includes("gol") && accionOriginal?.tipo?.includes("contra")) {
+      setGolesVisitante(prev => Math.max(prev - 1, 0));
+    }
+
+    // Eliminar del array visual
+    setAccionesRecientes(prev => prev.filter(a => a.id !== idAccion));
+
+    Swal.fire("Eliminado", "La acción ha sido eliminada", "success");
   } catch (error) {
     console.error(error);
     Swal.fire("Error", error.message || "No se pudo eliminar la acción", "error");
   }
 };
+
 
 
   const acortarNombre = (nombre) => nombre.slice(0, 6);
@@ -1041,7 +1089,7 @@ if (!partidoIniciado) {
             {accionesRecientes.map((accion, i) => (
               <Flex key={i} justify="space-between" align="center" p={2} borderWidth={1} borderRadius="md" bg="gray.50">
                 <Text fontSize="sm">
-                  <strong>{accion.tipo}</strong> - {accion.jugador}
+                  <strong>{nombresLegibles[accion.tipo] || accion.tipo}</strong> - {accion.jugador}
                 </Text>
                 <Button
                   size="xs"
