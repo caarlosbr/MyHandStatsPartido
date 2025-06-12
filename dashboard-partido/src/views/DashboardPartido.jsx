@@ -1,9 +1,9 @@
 /* Importaciones */
-import { useState, useEffect,useRef  } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Box, Flex, Icon, Text, Button, Grid, SimpleGrid,
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  useDisclosure, VStack, useToast,Spinner, Tooltip
+  useDisclosure, VStack, useToast, Spinner, Tooltip
 } from '@chakra-ui/react';
 import { FaBars, FaPause, FaPlay, FaInfoCircle } from 'react-icons/fa';
 import Swal from 'sweetalert2';
@@ -28,7 +28,7 @@ const nombresLegibles = {
   golesld: "Gol Derecha",
   golesei: "Gol Ext. Izquierda",
   golesed: "Gol Ext. Derecha",
-  golespi: "Gol Punto Izq.",
+  golespi: "Gol Pivote",
   golesc: "Gol Centro",
   goles7m: "Gol 7 metros",
   lanzamiento_7m: "Lanzamiento 7m",
@@ -69,6 +69,7 @@ const nombresLegibles = {
   robo: "Robo"
 };
 
+// Mapeo de nombres de acciones a tipos de acción
 const mapeoGolesALanzamientos = {
   golesli: "lanzamiento_li",
   golesld: "lanzamiento_ld",
@@ -79,6 +80,7 @@ const mapeoGolesALanzamientos = {
   goles7m: "lanzamiento_7m",
 };
 
+// Mapeo de goles en contra a lanzamientos en contra
 const mapeoGolesEnContraALanzamientos = {
   gol_en_contra_li: "lanzamiento_en_contra_li",
   gol_en_contra_ld: "lanzamiento_en_contra_ld",
@@ -116,9 +118,9 @@ const DashboardPartido = () => {
   const [isLoadingJugadores, setIsLoadingJugadores] = useState(false); // para indicar si los jugadores del partido están siendo cargados
   const [iniciandoPartido, setIniciandoPartido] = useState(false); // para indicar si el partido está siendo iniciado
   const [lanzamientos, setLanzamientos] = useState([]); // para almacenar los lanzamientos disponibles
-  const {isOpen: isLanzamientoOpen, onOpen: onLanzamientoOpen, onClose: onLanzamientoClose} = useDisclosure(); // para manejar el modal de lanzamientos
+  const { isOpen: isLanzamientoOpen, onOpen: onLanzamientoOpen, onClose: onLanzamientoClose } = useDisclosure(); // para manejar el modal de lanzamientos
   const [goles, setGoles] = useState([]); // para almacenar los goles disponibles
-  const {isOpen: isGolesOpen, onOpen: onGolesOpen, onClose: onGolesClose} = useDisclosure(); // para manejar el modal de goles
+  const { isOpen: isGolesOpen, onOpen: onGolesOpen, onClose: onGolesClose } = useDisclosure(); // para manejar el modal de goles
   const [parte, setParte] = useState(1); // para indicar en qué parte del partido estamos (1 o 2), por defecto 1
   const [golesEnContra, setGolesEnContra] = useState([]); // para almacenar los goles en contra
   const { isOpen: isGolesContraOpen, onOpen: onGolesContraOpen, onClose: onGolesContraClose } = useDisclosure(); // para manejar el modal de goles en contra
@@ -126,7 +128,7 @@ const DashboardPartido = () => {
   const [modalInfoOpen, setModalInfoOpen] = useState(false); // para manejar el modal de información
   const abrirModalInfo = () => setModalInfoOpen(true); // función para abrir el modal de información
   const cerrarModalInfo = () => setModalInfoOpen(false); // función para cerrar el modal de información
-  const {isOpen: isLanzamientosContraOpen, onOpen: onLanzamientosContraOpen, onClose: onLanzamientosContraClose } = useDisclosure(); // para manejar el modal de lanzamientos en contra
+  const { isOpen: isLanzamientosContraOpen, onOpen: onLanzamientosContraOpen, onClose: onLanzamientosContraClose } = useDisclosure(); // para manejar el modal de lanzamientos en contra
   const toast = useToast(); // para mostrar notificaciones
   const navigate = useNavigate(); // para navegar entre rutas
 
@@ -152,7 +154,7 @@ const DashboardPartido = () => {
 
 
   // Creamos una función para formatear el tiempo en minutos y segundos
-  const formatoTiempo = () => { 
+  const formatoTiempo = () => {
     const min = String(Math.floor(segundos / 60)).padStart(2, '0'); // calcula los minutos
     const sec = String(segundos % 60).padStart(2, '0'); // calcula los segundos 
     return `${min}:${sec}`; // retorna el tiempo formateado
@@ -189,30 +191,30 @@ const DashboardPartido = () => {
 
   // Si el partido no ha sido simulado, cargamos los datos del equipo local y sus jugadores
   useEffect(() => {
-  if (!partidoSimulado) return;
+    if (!partidoSimulado) return;
 
-  // Cargamos el token de autenticación, junto a el ID del equipo del partido 
-  const token = localStorage.getItem("token");
-  const equipoId = partidoSimulado.equipos_id;
+    // Cargamos el token de autenticación, junto a el ID del equipo del partido 
+    const token = localStorage.getItem("token");
+    const equipoId = partidoSimulado.equipos_id;
 
-  // Hacemos las peticiones para obtener el nombre del equipo y sus jugadores
-  fetch(`https://myhandstats.onrender.com/equipo/${equipoId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-    .then(res => res.json())
-    .then(data => {
-      if (data.nombre) setNombreEquipoLocal(data.nombre); // asignamos el nombre del equipo local
-    });
+    // Hacemos las peticiones para obtener el nombre del equipo y sus jugadores
+    fetch(`https://myhandstats.onrender.com/equipo/${equipoId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.nombre) setNombreEquipoLocal(data.nombre); // asignamos el nombre del equipo local
+      });
 
-  // Obtenemos los jugadores del equipo  
-  fetch(`https://myhandstats.onrender.com/equipo/${equipoId}/jugadores`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      if (Array.isArray(data)) setJugadores(data); // asignamos los jugadores del equipo
-    });
-}, [partidoSimulado]);
+    // Obtenemos los jugadores del equipo  
+    fetch(`https://myhandstats.onrender.com/equipo/${equipoId}/jugadores`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setJugadores(data); // asignamos los jugadores del equipo
+      });
+  }, [partidoSimulado]);
 
 
   // Cargamos las fases de juego y acciones disponibles al iniciar el componente
@@ -234,7 +236,7 @@ const DashboardPartido = () => {
       .then((data) => {
         if (Array.isArray(data)) setAcciones(data);
       });
-  }, []); 
+  }, []);
 
 
   // Filtramos las acciones según la fase seleccionada
@@ -243,18 +245,18 @@ const DashboardPartido = () => {
       "ofensiva": ["goles", "lanzamiento", "perdida"],
       "defensiva": ["recuperacion", "amonestacion", "gol_en_contra", "lanzamiento_en_contra"],
       "contra_ataque": ["goles", "lanzamiento", "perdida"],
-      "repliegue": ["gol_en_contra", "amonestacion", "lanzamiento_en_contra", "recuperacion","amonestacion"],
+      "repliegue": ["gol_en_contra", "amonestacion", "lanzamiento_en_contra", "recuperacion", "amonestacion"],
       "superioridad_ofensiva": ["goles", "lanzamiento", "perdida"],
-      "superioridad_defensiva": ["recuperacion", "gol_en_contra", "lanzamiento_en_contra","amonestacion"],
+      "superioridad_defensiva": ["recuperacion", "gol_en_contra", "lanzamiento_en_contra", "amonestacion"],
       "inferioridad_ofensiva": ["lanzamiento", "perdida", "gol"],
-      "inferioridad_defensiva\n": ["gol_en_contra", "amonestacion", "lanzamiento_en_contra","recuperacion"],
+      "inferioridad_defensiva\n": ["gol_en_contra", "amonestacion", "lanzamiento_en_contra", "recuperacion"],
     };
     const tipos = tiposPorFase[faseSeleccionada] || [];
     const filtradas = acciones.filter(acc => tipos.includes(acc.tipo_accion));
     setAccionesFiltradas(filtradas);
   }, [faseSeleccionada, acciones]);
 
-  const bloquearPlay = 
+  const bloquearPlay =
     (parte === 1 && segundos >= 1800) ||
     (parte === 2 && segundos >= 3600);
 
@@ -294,106 +296,109 @@ const DashboardPartido = () => {
     }
   }, [jugadorSeleccionado, partidoIniciado]);
 
+  // Función para iniciar el partido
+  const handleAccion = async (accion) => {
+    // Verifica si el partido ha sido iniciado
+    if (accion.tipo_accion !== "gol_en_contra" && !jugadorSeleccionado) {
+      Swal.fire("Jugador no seleccionado", "Selecciona un jugador para registrar esta acción", "error");
+      return;
+    }
 
-const handleAccion = async (accion) => {
-if (accion.tipo_accion !== "gol_en_contra" && !jugadorSeleccionado) {
-  Swal.fire("Jugador no seleccionado", "Selecciona un jugador para registrar esta acción", "error");
-  return;
-}
+    // Verifica si el partido ha sido simulado
+    const jugadorPartido = jugadoresPartido.find(jp => jp.jugadores_id === jugadorSeleccionado?.id); // obtiene el jugador del partido
+    const posicion = jugadorSeleccionado?.posiciones?.[0]?.nombre?.toLowerCase(); // obtiene la posición del jugador seleccionado
 
-const jugadorPartido = jugadoresPartido.find(jp => jp.jugadores_id === jugadorSeleccionado?.id);
-const posicion = jugadorSeleccionado?.posiciones?.[0]?.nombre?.toLowerCase();
+    // Verifica si la acción es válida según la posición del jugador
+    if (
+      ["gol_en_contra", "lanzamiento_en_contra"].includes(accion.tipo_accion) &&
+      posicion !== "portero"
+    ) {
+      Swal.fire("Acción inválida", "Solo los porteros pueden registrar esta acción", "error");
+      return;
+    }
 
-if (
-  ["gol_en_contra", "lanzamiento_en_contra"].includes(accion.tipo_accion) &&
-  posicion !== "portero"
-) {
-  Swal.fire("Acción inválida", "Solo los porteros pueden registrar esta acción", "error");
-  return;
-}
+    const minuto = formatoTiempo();
+    const fase = fasesJuego.find(f => f.nombre === faseSeleccionada);
+    if (!fase) {
+      Swal.fire("Error", "Fase de juego no válida", "error");
+      return;
+    }
 
-const minuto = formatoTiempo();
-const fase = fasesJuego.find(f => f.nombre === faseSeleccionada);
-if (!fase) {
-  Swal.fire("Error", "Fase de juego no válida", "error");
-  return;
-}
-
-// Guarda la acción principal
-const nuevaAccion = await guardarAccionPartido({
-  minuto,
-  jugadores_partido_id: jugadorPartido?.id || null,
-  acciones_id: accion.id,
-  fases_juego_id: fase.id
-});
-
-if (!nuevaAccion) return;
-
-let idLanzamiento = null;
-
-// Si es gol en contra, registra también lanzamiento en contra correspondiente
-if (accion.tipo_accion === "gol_en_contra") {
-  const lanzamientoRelacionado = mapeoGolesEnContraALanzamientos[accion.nombre];
-  const accionLanzamiento = acciones.find(a => a.nombre === lanzamientoRelacionado);
-
-  if (accionLanzamiento) {
-    const lanzamiento = await guardarAccionPartido({
+    // Guarda la acción principal
+    const nuevaAccion = await guardarAccionPartido({
       minuto,
       jugadores_partido_id: jugadorPartido?.id || null,
-      acciones_id: accionLanzamiento.id,
+      acciones_id: accion.id,
       fases_juego_id: fase.id
     });
 
-    if (lanzamiento) {
-      idLanzamiento = lanzamiento.id;
-    }
-  }
-}
+    if (!nuevaAccion) return;
 
+    let idLanzamiento = null;
 
-  // Si es un gol, también guarda el lanzamiento relacionado
-  if (accion.tipo_accion === "goles") {
-    setGolesLocal(prev => prev + 1);
+    // Si es gol en contra, registra también lanzamiento en contra correspondiente
+    if (accion.tipo_accion === "gol_en_contra") {
+      const lanzamientoRelacionado = mapeoGolesEnContraALanzamientos[accion.nombre];
+      const accionLanzamiento = acciones.find(a => a.nombre === lanzamientoRelacionado);
 
-    const lanzamientoRelacionado = mapeoGolesALanzamientos[accion.nombre];
-    const accionLanzamiento = acciones.find(a => a.nombre === lanzamientoRelacionado);
+      if (accionLanzamiento) {
+        const lanzamiento = await guardarAccionPartido({
+          minuto,
+          jugadores_partido_id: jugadorPartido?.id || null,
+          acciones_id: accionLanzamiento.id,
+          fases_juego_id: fase.id
+        });
 
-    if (accionLanzamiento) {
-      const lanzamiento = await guardarAccionPartido({
-        minuto,
-        jugadores_partido_id: jugadorPartido?.id || null,
-        acciones_id: accionLanzamiento.id,
-        fases_juego_id: fase.id
-      });
-
-      if (lanzamiento) {
-        idLanzamiento = lanzamiento.id;
+        if (lanzamiento) {
+          idLanzamiento = lanzamiento.id;
+        }
       }
     }
-  } else if (accion.tipo_accion === "gol_en_contra") {
-    setGolesVisitante(prev => prev + 1);
-  }
 
-  // Solo mostramos la acción principal (el gol) en el log visual
-  setAccionesRecientes(prev => [
-    {
-      id: nuevaAccion.id,
-      idLanzamiento, // Se guarda para borrarlo si se elimina el gol
-      jugador: jugadorSeleccionado?.nombre || "Sin jugador",
-      tipo: accion.nombre
-    },
-    ...prev.slice(0, 4)
-  ]);
 
-  toast({
-    title: 'Acción registrada',
-    description: `Se registró: ${accion.nombre.replaceAll('_', ' ')}${jugadorSeleccionado ? ` - ${jugadorSeleccionado.dorsal} ${jugadorSeleccionado.nombre}` : ''}`,
-    status: 'info',
-    duration: 2500,
-    isClosable: true,
-    position: 'bottom-left'
-  });
-};
+    // Si es un gol, también guarda el lanzamiento relacionado
+    if (accion.tipo_accion === "goles") {
+      setGolesLocal(prev => prev + 1);
+
+      const lanzamientoRelacionado = mapeoGolesALanzamientos[accion.nombre];
+      const accionLanzamiento = acciones.find(a => a.nombre === lanzamientoRelacionado);
+
+      if (accionLanzamiento) {
+        const lanzamiento = await guardarAccionPartido({
+          minuto,
+          jugadores_partido_id: jugadorPartido?.id || null,
+          acciones_id: accionLanzamiento.id,
+          fases_juego_id: fase.id
+        });
+
+        if (lanzamiento) {
+          idLanzamiento = lanzamiento.id;
+        }
+      }
+    } else if (accion.tipo_accion === "gol_en_contra") {
+      setGolesVisitante(prev => prev + 1);
+    }
+
+    // Solo mostramos la acción principal (el gol) en el log visual
+    setAccionesRecientes(prev => [
+      {
+        id: nuevaAccion.id,
+        idLanzamiento, // Se guarda para borrarlo si se elimina el gol
+        jugador: jugadorSeleccionado?.nombre || "Sin jugador",
+        tipo: accion.nombre
+      },
+      ...prev.slice(0, 4)
+    ]);
+
+    toast({
+      title: 'Acción registrada',
+      description: `Se registró: ${accion.nombre.replaceAll('_', ' ')}${jugadorSeleccionado ? ` - ${jugadorSeleccionado.dorsal} ${jugadorSeleccionado.nombre}` : ''}`,
+      status: 'info',
+      duration: 2500,
+      isClosable: true,
+      position: 'bottom-left'
+    });
+  };
 
 
 
@@ -411,39 +416,39 @@ if (accion.tipo_accion === "gol_en_contra") {
     return result.isConfirmed;
   };
 
-const handleFinalizarParte = async () => {
-  if (parte === 1 && segundos < 1800) {
-    toast({
-      title: "No se puede finalizar",
-      description: "Debes esperar a que termine la primera parte (30:00).",
-      status: "warning",
-      duration: 3000,
-      isClosable: true,
-      position: "top-left"
-    });
-    return;
-  }
+  const handleFinalizarParte = async () => {
+    if (parte === 1 && segundos < 1800) {
+      toast({
+        title: "No se puede finalizar",
+        description: "Debes esperar a que termine la primera parte (30:00).",
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+        position: "top-left"
+      });
+      return;
+    }
 
-  if (await confirmar("¿Estás seguro de finalizar la parte?")) {
-    setActivo(false); // pausa el cronómetro
-    setParte((prev) => (prev === 1 ? 2 : prev)); // pasa a la segunda parte
-    Swal.fire("Parte finalizada", "Puedes comenzar la siguiente parte", "success");
-  }
-};
-
-
-
-const handleFinalizarPartido = async () => {
-  if (await confirmar("¿Finalizar el partido completamente?")) {
-    setActivo(false);
-    Swal.fire("Partido finalizado", "Buen trabajo", "success").then(() => {
-      navigate("/seleccionar-equipo");
-    });
-  }
-};
+    if (await confirmar("¿Estás seguro de finalizar la parte?")) {
+      setActivo(false); // pausa el cronómetro
+      setParte((prev) => (prev === 1 ? 2 : prev)); // pasa a la segunda parte
+      Swal.fire("Parte finalizada", "Puedes comenzar la siguiente parte", "success");
+    }
+  };
 
 
-  
+
+  const handleFinalizarPartido = async () => {
+    if (await confirmar("¿Finalizar el partido completamente?")) {
+      setActivo(false);
+      Swal.fire("Partido finalizado", "Buen trabajo", "success").then(() => {
+        navigate("/seleccionar-equipo");
+      });
+    }
+  };
+
+
+
 
   const crearPartido = async (nombreRival) => {
     const token = localStorage.getItem("token");
@@ -481,405 +486,405 @@ const handleFinalizarPartido = async () => {
   };
 
 
-const seleccionarConvocados = async () => {
-  return new Promise((resolve) => {
-    let seleccionados = [];
+  const seleccionarConvocados = async () => {
+    return new Promise((resolve) => {
+      let seleccionados = [];
 
-    Swal.fire({
-      title: 'Seleccionar Convocados',
-      html: `<div id="convocados-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:10px; max-height:400px; overflow:auto;"></div>`,
-      willOpen: () => {
-        const container = document.getElementById("convocados-grid");
+      Swal.fire({
+        title: 'Seleccionar Convocados',
+        html: `<div id="convocados-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:10px; max-height:400px; overflow:auto;"></div>`,
+        willOpen: () => {
+          const container = document.getElementById("convocados-grid");
 
-        const coloresPorPosicion = {
-          portero: "#014C4C",
-          central: "#3C3C8C",
-          pivote: "#8C3C3C",
-          lateral_derecho: "#D97706",
-          lateral_izquierdo: "#059669",
-          extremo_derecho: "#2563EB",
-          extremo_izquierdo: "#EC4899",
-          defensa: "#6B7280",
-          sin_posicion: "#9CA3AF"
-        };
+          const coloresPorPosicion = {
+            portero: "#014C4C",
+            central: "#3C3C8C",
+            pivote: "#8C3C3C",
+            lateral_derecho: "#D97706",
+            lateral_izquierdo: "#059669",
+            extremo_derecho: "#2563EB",
+            extremo_izquierdo: "#EC4899",
+            defensa: "#6B7280",
+            sin_posicion: "#9CA3AF"
+          };
 
-        jugadores.forEach(j => {
-          const card = document.createElement("div");
-          card.classList.add("jugador-card");
-          card.setAttribute("data-id", j.id);
+          jugadores.forEach(j => {
+            const card = document.createElement("div");
+            card.classList.add("jugador-card");
+            card.setAttribute("data-id", j.id);
 
-          const posicion = j.posiciones?.[0]?.nombre?.toLowerCase() || "sin_posicion";
-          const color = coloresPorPosicion[posicion] || "#f7f4f4";
+            const posicion = j.posiciones?.[0]?.nombre?.toLowerCase() || "sin_posicion";
+            const color = coloresPorPosicion[posicion] || "#f7f4f4";
 
-          Object.assign(card.style, {
-            backgroundColor: color,
-            color: "white",
-            padding: "10px",
-            margin: "5px",
-            borderRadius: "8px",
-            cursor: "pointer",
-            textAlign: "center",
-            fontWeight: "bold",
-            minWidth: "150px",
-            userSelect: "none"
+            Object.assign(card.style, {
+              backgroundColor: color,
+              color: "white",
+              padding: "10px",
+              margin: "5px",
+              borderRadius: "8px",
+              cursor: "pointer",
+              textAlign: "center",
+              fontWeight: "bold",
+              minWidth: "150px",
+              userSelect: "none"
+            });
+
+            card.innerHTML = `<div>#${j.dorsal}</div><div>${j.nombre}</div>`;
+
+            // ✅ Alternar clase "seleccionado"
+            card.addEventListener("click", () => {
+              card.classList.toggle("seleccionado");
+              card.style.opacity = card.classList.contains("seleccionado") ? "1" : "0.6";
+              card.style.border = card.classList.contains("seleccionado")
+                ? "2px solid white"
+                : "none";
+            });
+
+            container.appendChild(card);
           });
+        },
+        preConfirm: () => {
+          const seleccionadosIds = Array.from(document.querySelectorAll('#convocados-grid .jugador-card.seleccionado'))
+            .map(card => Number(card.getAttribute('data-id')));
 
-          card.innerHTML = `<div>#${j.dorsal}</div><div>${j.nombre}</div>`;
-
-          // ✅ Alternar clase "seleccionado"
-          card.addEventListener("click", () => {
-            card.classList.toggle("seleccionado");
-            card.style.opacity = card.classList.contains("seleccionado") ? "1" : "0.6";
-            card.style.border = card.classList.contains("seleccionado")
-              ? "2px solid white"
-              : "none";
-          });
-
-          container.appendChild(card);
-        });
-      },
-      preConfirm: () => {
-        const seleccionadosIds = Array.from(document.querySelectorAll('#convocados-grid .jugador-card.seleccionado'))
-          .map(card => Number(card.getAttribute('data-id')));
-        
-        return data.filter(j => seleccionadosIds.includes(j.id));
-      },
-      showCancelButton: true,
-      confirmButtonText: 'Confirmar'
-    }).then(result => {
-      if (result.isConfirmed) {
-        resolve(result.value); // jugadores seleccionados
-      } else {
-        resolve([]); // cancelado
-      }
-    });
-
-  });
-};
-
-
-const crearJugadoresPartido = async (convocados, equipoId, partidoId, setIsLoadingJugadores, setJugadoresPartido) => {
-  const token = localStorage.getItem("token");
-  const jugadoresCreados = [];
-
-  setIsLoadingJugadores(true); // ⬅️ empieza la carga
-
-  for (const jugador of convocados) {
-    const payload = {
-      golesli: 0, golesld: 0, golesei: 0, golesc: 0, goles7m: 0, golesed: 0, golest: 0, golespi: 0,
-      tarjetas_amarillas: 0, tarjetas_rojas: 0,
-      lanzamientos: 0, lanzamiento_7m: 0, exclusiones: 0, recuperaciones: 0, perdidas: 0,
-      partidos_id: partidoId,
-      jugadores_id: jugador.id,
-      paradas: 0, lanzamiento_ed: 0, lanzamiento_li: 0, lanzamiento_c: 0, lanzamiento_pi: 0,
-      lanzamiento_ext_ld: 0, lanzamiento_ext_li: 0, lanzamiento_ext_c: 0,
-      exclusion_2_min: 0, tarjetas_azules: 0, fallo_pase: 0, fallo_recepcion: 0,
-      pasos: 0, falta_en_ataque: 0, dobles: 0, invasion_area: 0, blocaje: 0, robo: 0,
-      lanzamiento_en_contra_ei: 0, lanzamiento_en_contra_ed: 0, lanzamiento_en_contra_li: 0,
-      lanzamiento_en_contra_c: 0, lanzamiento_en_contra_ld: 0, lanzamiento_en_contra_pi: 0,
-      lanzamiento_en_contra_7m: 0, gol_en_contra_ei: 0, gol_en_contra_ed: 0,
-      gol_en_contra_li: 0, gol_en_contra_c: 0, gol_en_contra_ld: 0, gol_en_contra_pi: 0, gol_en_contra_7m: 0,
-    };
-
-    try {
-      const res = await fetch(
-        `https://myhandstats.onrender.com/equipo/${equipoId}/partido/${partidoId}/jugador_partido`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify(payload)
+          return data.filter(j => seleccionadosIds.includes(j.id));
+        },
+        showCancelButton: true,
+        confirmButtonText: 'Confirmar'
+      }).then(result => {
+        if (result.isConfirmed) {
+          resolve(result.value); // jugadores seleccionados
+        } else {
+          resolve([]); // cancelado
         }
-      );
+      });
 
-      const data = await res.json();
-      jugadoresCreados.push(data); 
-    } catch (err) {
-      console.error("Error al crear jugador del partido", err);
-    }
-  }
-
-  setJugadoresPartido(jugadoresCreados); 
-  console.log("Jugadores del partido creados:", jugadoresCreados);
-
-  setIsLoadingJugadores(false); 
-};
-
-
-
-const guardarAccionPartido = async (accion) => {
-  const token = localStorage.getItem("token");
-
-  try {
-    const res = await fetch("https://myhandstats.onrender.com/accion_partido", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify(accion)
     });
-
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || "Error al guardar la acción");
-
-    console.log("✅ Acción guardada:", data);
-    return data; // <-- importante
-  } catch (error) {
-    console.error("❌ Error guardando acción:", error.message);
-    Swal.fire("Error", error.message, "error");
-    return null;
-  }
-};
+  };
 
 
-const obtenerLanzamientos = async () => {
-  const token = localStorage.getItem("token");
-  try {
-    const res = await fetch("https://myhandstats.onrender.com/acciones/filtrar?tipo_accion=lanzamiento", {
-      headers: {
-        Authorization: `Bearer ${token}`
+  const crearJugadoresPartido = async (convocados, equipoId, partidoId, setIsLoadingJugadores, setJugadoresPartido) => {
+    const token = localStorage.getItem("token");
+    const jugadoresCreados = [];
+
+    setIsLoadingJugadores(true); // ⬅️ empieza la carga
+
+    for (const jugador of convocados) {
+      const payload = {
+        golesli: 0, golesld: 0, golesei: 0, golesc: 0, goles7m: 0, golesed: 0, golest: 0, golespi: 0,
+        tarjetas_amarillas: 0, tarjetas_rojas: 0,
+        lanzamientos: 0, lanzamiento_7m: 0, exclusiones: 0, recuperaciones: 0, perdidas: 0,
+        partidos_id: partidoId,
+        jugadores_id: jugador.id,
+        paradas: 0, lanzamiento_ed: 0, lanzamiento_li: 0, lanzamiento_c: 0, lanzamiento_pi: 0,
+        lanzamiento_ext_ld: 0, lanzamiento_ext_li: 0, lanzamiento_ext_c: 0,
+        exclusion_2_min: 0, tarjetas_azules: 0, fallo_pase: 0, fallo_recepcion: 0,
+        pasos: 0, falta_en_ataque: 0, dobles: 0, invasion_area: 0, blocaje: 0, robo: 0,
+        lanzamiento_en_contra_ei: 0, lanzamiento_en_contra_ed: 0, lanzamiento_en_contra_li: 0,
+        lanzamiento_en_contra_c: 0, lanzamiento_en_contra_ld: 0, lanzamiento_en_contra_pi: 0,
+        lanzamiento_en_contra_7m: 0, gol_en_contra_ei: 0, gol_en_contra_ed: 0,
+        gol_en_contra_li: 0, gol_en_contra_c: 0, gol_en_contra_ld: 0, gol_en_contra_pi: 0, gol_en_contra_7m: 0,
+      };
+
+      try {
+        const res = await fetch(
+          `https://myhandstats.onrender.com/equipo/${equipoId}/partido/${partidoId}/jugador_partido`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+          }
+        );
+
+        const data = await res.json();
+        jugadoresCreados.push(data);
+      } catch (err) {
+        console.error("Error al crear jugador del partido", err);
       }
-    });
-    const data = await res.json();
-    if (Array.isArray(data)) {
-      setLanzamientos(data);
-      onLanzamientoOpen();
     }
-  } catch (err) {
-    console.error("Error al cargar lanzamientos", err);
-  }
-};
 
-const obtenerGoles = async () => {
-  if (!jugadorSeleccionado) {
-    Swal.fire("Selecciona un jugador", "Debes elegir un jugador antes de registrar un gol", "warning");
-    return;
-  }
+    setJugadoresPartido(jugadoresCreados);
+    console.log("Jugadores del partido creados:", jugadoresCreados);
 
-  const token = localStorage.getItem("token");
-  try {
-    const res = await fetch("https://myhandstats.onrender.com/acciones/filtrar?tipo_accion=goles", {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-    const data = await res.json();
-    if (Array.isArray(data)) {
-      setGoles(data);
-      onGolesOpen();
-    }
-  } catch (err) {
-    console.error("Error al cargar goles", err);
-  }
-};
+    setIsLoadingJugadores(false);
+  };
 
-const obtenerGolesEnContra = async () => {
-  const token = localStorage.getItem("token");
-  try {
-    const res = await fetch("https://myhandstats.onrender.com/acciones/filtrar?tipo_accion=gol_en_contra", {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const data = await res.json();
-    if (Array.isArray(data)) {
-      setGolesEnContra(data);
-      onGolesContraOpen();
-    }
-  } catch (err) {
-    console.error("Error al cargar goles en contra", err);
-  }
-};
 
-const obtenerLanzamientosEnContra = async () => {
-  const token = localStorage.getItem("token");
-  try {
-    const res = await fetch(
-      "https://myhandstats.onrender.com/acciones/filtrar?tipo_accion=lanzamiento_en_contra",
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    const data = await res.json();
-    if (Array.isArray(data)) {
-      setLanzamientosEnContra(data);
-      onLanzamientosContraOpen();
-    }
-  } catch (err) {
-    console.error("Error al cargar lanzamientos en contra", err);
-    Swal.fire("Error", "No se pudieron cargar los lanzamientos en contra", "error");
-  }
-};
 
-const eliminarAccion = async (idAccion) => {
-  const confirmacion = await Swal.fire({
-    title: "¿Eliminar acción?",
-    text: "Esta acción se eliminará permanentemente",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonText: "Sí, eliminar",
-    cancelButtonText: "Cancelar",
-  });
-
-  if (!confirmacion.isConfirmed) return;
-
-  try {
+  const guardarAccionPartido = async (accion) => {
     const token = localStorage.getItem("token");
 
-    const accionOriginal = accionesRecientes.find(a => a.id === idAccion);
+    try {
+      const res = await fetch("https://myhandstats.onrender.com/accion_partido", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(accion)
+      });
 
-    // Eliminar acción principal
-    await fetch(`https://myhandstats.onrender.com/accion_partido/${idAccion}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Error al guardar la acción");
+
+      console.log("✅ Acción guardada:", data);
+      return data; // <-- importante
+    } catch (error) {
+      console.error("❌ Error guardando acción:", error.message);
+      Swal.fire("Error", error.message, "error");
+      return null;
+    }
+  };
+
+
+  const obtenerLanzamientos = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch("https://myhandstats.onrender.com/acciones/filtrar?tipo_accion=lanzamiento", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setLanzamientos(data);
+        onLanzamientoOpen();
+      }
+    } catch (err) {
+      console.error("Error al cargar lanzamientos", err);
+    }
+  };
+
+  const obtenerGoles = async () => {
+    if (!jugadorSeleccionado) {
+      Swal.fire("Selecciona un jugador", "Debes elegir un jugador antes de registrar un gol", "warning");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch("https://myhandstats.onrender.com/acciones/filtrar?tipo_accion=goles", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setGoles(data);
+        onGolesOpen();
+      }
+    } catch (err) {
+      console.error("Error al cargar goles", err);
+    }
+  };
+
+  const obtenerGolesEnContra = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch("https://myhandstats.onrender.com/acciones/filtrar?tipo_accion=gol_en_contra", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setGolesEnContra(data);
+        onGolesContraOpen();
+      }
+    } catch (err) {
+      console.error("Error al cargar goles en contra", err);
+    }
+  };
+
+  const obtenerLanzamientosEnContra = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(
+        "https://myhandstats.onrender.com/acciones/filtrar?tipo_accion=lanzamiento_en_contra",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setLanzamientosEnContra(data);
+        onLanzamientosContraOpen();
+      }
+    } catch (err) {
+      console.error("Error al cargar lanzamientos en contra", err);
+      Swal.fire("Error", "No se pudieron cargar los lanzamientos en contra", "error");
+    }
+  };
+
+  const eliminarAccion = async (idAccion) => {
+    const confirmacion = await Swal.fire({
+      title: "¿Eliminar acción?",
+      text: "Esta acción se eliminará permanentemente",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
     });
 
-    // Eliminar lanzamiento asociado si existe
-    if (accionOriginal?.idLanzamiento) {
-      await fetch(`https://myhandstats.onrender.com/accion_partido/${accionOriginal.idLanzamiento}`, {
+    if (!confirmacion.isConfirmed) return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const accionOriginal = accionesRecientes.find(a => a.id === idAccion);
+
+      // Eliminar acción principal
+      await fetch(`https://myhandstats.onrender.com/accion_partido/${idAccion}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      // Eliminar lanzamiento asociado si existe
+      if (accionOriginal?.idLanzamiento) {
+        await fetch(`https://myhandstats.onrender.com/accion_partido/${accionOriginal.idLanzamiento}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+
+      // Actualiza marcador
+      if (accionOriginal?.tipo?.startsWith("goles")) {
+        setGolesLocal(prev => Math.max(prev - 1, 0));
+      } else if (accionOriginal?.tipo?.includes("gol") && accionOriginal?.tipo?.includes("contra")) {
+        setGolesVisitante(prev => Math.max(prev - 1, 0));
+      }
+
+      // Eliminar del array visual
+      setAccionesRecientes(prev => prev.filter(a => a.id !== idAccion));
+
+      Swal.fire("Eliminado", "La acción ha sido eliminada", "success");
+    } catch (error) {
+      console.error(error);
+      Swal.fire("Error", error.message || "No se pudo eliminar la acción", "error");
     }
-
-    // Actualiza marcador
-    if (accionOriginal?.tipo?.startsWith("goles")) {
-      setGolesLocal(prev => Math.max(prev - 1, 0));
-    } else if (accionOriginal?.tipo?.includes("gol") && accionOriginal?.tipo?.includes("contra")) {
-      setGolesVisitante(prev => Math.max(prev - 1, 0));
-    }
-
-    // Eliminar del array visual
-    setAccionesRecientes(prev => prev.filter(a => a.id !== idAccion));
-
-    Swal.fire("Eliminado", "La acción ha sido eliminada", "success");
-  } catch (error) {
-    console.error(error);
-    Swal.fire("Error", error.message || "No se pudo eliminar la acción", "error");
-  }
-};
+  };
 
 
 
   const acortarNombre = (nombre) => nombre.slice(0, 6);
-if (!partidoIniciado) {
-  return (
-    <Box p={8} minH="100vh" bg="white" textAlign="center">
-      <Text fontSize="xl" mb={4} fontWeight="bold">Comenzar nuevo partido</Text>
-      <Button
-        bg="#014C4C"
-        color="white"
-        _hover={{ bg: '#016666' }}
-        onClick={async () => {
-          const { value: nombreRival } = await Swal.fire({
-            title: 'Nombre del equipo rival',
-            input: 'text',
-            inputPlaceholder: 'Ej. Atlético Madrid',
-            confirmButtonText: 'Continuar',
-            showCancelButton: true,
-            inputValidator: (value) => {
-              if (!value) return 'Por favor, escribe un nombre';
-            }
-          });
-
-          if (!nombreRival) return;
-
-          const token = localStorage.getItem("token");
-          const equipoId = localStorage.getItem("id_equipo");
-          const response = await fetch(`https://myhandstats.onrender.com/equipo/${equipoId}/jugadores`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          const data = await response.json();
-          if (!Array.isArray(data) || data.length === 0) {
-            Swal.fire("Sin jugadores", "No hay jugadores disponibles", "error");
-            return;
-          }
-          setJugadores(data);
-
-          const confirmados = await new Promise((resolve) => {
-            Swal.fire({
-              title: 'Seleccionar Convocados',
-              html: `<div id="convocados-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:10px; max-height:300px; overflow:auto;"></div>`,
-              willOpen: () => {
-                const container = document.getElementById("convocados-grid");
-
-                data.forEach(j => {
-                  const card = document.createElement("div");
-                  card.classList.add("jugador-card");
-                  card.setAttribute("data-id", j.id); 
-
-                  Object.assign(card.style, {
-                    backgroundColor: "#f7f4f4",
-                    color: "black",
-                    padding: "10px",
-                    margin: "5px",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    textAlign: "center",
-                    fontWeight: "",
-                    minWidth: "100px",
-                    userSelect: "none",
-                    opacity: "0.6"
-                  });
-
-                  card.innerHTML = `<b>${j.nombre}</b><p>#${j.dorsal}</p>`;
-
-                  card.addEventListener("click", () => {
-                    card.classList.toggle("seleccionado");
-                    card.style.opacity = card.classList.contains("seleccionado") ? "1" : "0.6";
-                    card.style.border = card.classList.contains("seleccionado")
-                      ? "2px solid white"
-                      : "none";
-                  });
-
-                  container.appendChild(card);
-                });
-              },
-              preConfirm: () => {
-                const seleccionadosIds = Array.from(document.querySelectorAll('#convocados-grid .jugador-card.seleccionado'))
-                  .map(card => Number(card.getAttribute('data-id')));
-
-                const seleccionados = data.filter(j => seleccionadosIds.includes(j.id));
-                console.log("Jugadores seleccionados:", seleccionados);
-                return seleccionados;
-              },
+  if (!partidoIniciado) {
+    return (
+      <Box p={8} minH="100vh" bg="white" textAlign="center">
+        <Text fontSize="xl" mb={4} fontWeight="bold">Comenzar nuevo partido</Text>
+        <Button
+          bg="#014C4C"
+          color="white"
+          _hover={{ bg: '#016666' }}
+          onClick={async () => {
+            const { value: nombreRival } = await Swal.fire({
+              title: 'Nombre del equipo rival',
+              input: 'text',
+              inputPlaceholder: 'Ej. Atlético Madrid',
+              confirmButtonText: 'Continuar',
               showCancelButton: true,
-              confirmButtonText: 'Confirmar'
-            }).then(result => {
-              if (result.isConfirmed) {
-                resolve(result.value);
-              } else {
-                resolve([]);
+              inputValidator: (value) => {
+                if (!value) return 'Por favor, escribe un nombre';
               }
             });
-          });
 
-          const partido = await crearPartido(nombreRival);
+            if (!nombreRival) return;
 
-          if (confirmados.length > 0 && partido?.id) {
-            setConvocados(confirmados);
-            setEquipoRivalNombre(nombreRival);
-            setPartidoSimulado(partido);
-            setPartidoIniciado(true);
+            const token = localStorage.getItem("token");
+            const equipoId = localStorage.getItem("id_equipo");
+            const response = await fetch(`https://myhandstats.onrender.com/equipo/${equipoId}/jugadores`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await response.json();
+            if (!Array.isArray(data) || data.length === 0) {
+              Swal.fire("Sin jugadores", "No hay jugadores disponibles", "error");
+              return;
+            }
+            setJugadores(data);
 
-            await crearJugadoresPartido(
-              confirmados,
-              partido.equipos_id,
-              partido.id,
-              setIsLoadingJugadores,
-              setJugadoresPartido
-            );
-            console.log(partido.equipos_id, partido.id);
-          }
-        }}
-      >
-        Comenzar Partido
-      </Button>
-    </Box>
-  );
-}
+            const confirmados = await new Promise((resolve) => {
+              Swal.fire({
+                title: 'Seleccionar Convocados',
+                html: `<div id="convocados-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:10px; max-height:300px; overflow:auto;"></div>`,
+                willOpen: () => {
+                  const container = document.getElementById("convocados-grid");
+
+                  data.forEach(j => {
+                    const card = document.createElement("div");
+                    card.classList.add("jugador-card");
+                    card.setAttribute("data-id", j.id);
+
+                    Object.assign(card.style, {
+                      backgroundColor: "#f7f4f4",
+                      color: "black",
+                      padding: "10px",
+                      margin: "5px",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      textAlign: "center",
+                      fontWeight: "",
+                      minWidth: "100px",
+                      userSelect: "none",
+                      opacity: "0.6"
+                    });
+
+                    card.innerHTML = `<b>${j.nombre}</b><p>#${j.dorsal}</p>`;
+
+                    card.addEventListener("click", () => {
+                      card.classList.toggle("seleccionado");
+                      card.style.opacity = card.classList.contains("seleccionado") ? "1" : "0.6";
+                      card.style.border = card.classList.contains("seleccionado")
+                        ? "2px solid white"
+                        : "none";
+                    });
+
+                    container.appendChild(card);
+                  });
+                },
+                preConfirm: () => {
+                  const seleccionadosIds = Array.from(document.querySelectorAll('#convocados-grid .jugador-card.seleccionado'))
+                    .map(card => Number(card.getAttribute('data-id')));
+
+                  const seleccionados = data.filter(j => seleccionadosIds.includes(j.id));
+                  console.log("Jugadores seleccionados:", seleccionados);
+                  return seleccionados;
+                },
+                showCancelButton: true,
+                confirmButtonText: 'Confirmar'
+              }).then(result => {
+                if (result.isConfirmed) {
+                  resolve(result.value);
+                } else {
+                  resolve([]);
+                }
+              });
+            });
+
+            const partido = await crearPartido(nombreRival);
+
+            if (confirmados.length > 0 && partido?.id) {
+              setConvocados(confirmados);
+              setEquipoRivalNombre(nombreRival);
+              setPartidoSimulado(partido);
+              setPartidoIniciado(true);
+
+              await crearJugadoresPartido(
+                confirmados,
+                partido.equipos_id,
+                partido.id,
+                setIsLoadingJugadores,
+                setJugadoresPartido
+              );
+              console.log(partido.equipos_id, partido.id);
+            }
+          }}
+        >
+          Comenzar Partido
+        </Button>
+      </Box>
+    );
+  }
 
   return (
-      <>
+    <>
       {iniciandoPartido && (
         <Box
           position="fixed"
@@ -921,167 +926,82 @@ if (!partidoIniciado) {
         </Box>
       )}
 
-    <Box p={4} minH="100vh" bg="white">
-      <Flex align="center" justify="space-between" wrap="wrap" gap={4} mb={6}>
+      <Box p={4} minH="100vh" bg="white">
+        <Flex align="center" justify="space-between" wrap="wrap" gap={4} mb={6}>
 
-        {/* Marcador con nombres */}
-        <Flex align="center" justify="center" flex="1" gap={4}>
-          <Text fontSize="2xl" fontWeight="bold" textTransform="uppercase">
-            {nombreEquipoLocal}
-          </Text>
+          {/* Marcador con nombres */}
+          <Flex align="center" justify="center" flex="1" gap={4}>
+            <Text fontSize="2xl" fontWeight="bold" textTransform="uppercase">
+              {nombreEquipoLocal}
+            </Text>
 
-          <Flex align="center" gap={1}>
-            <Text fontSize="4xl" color="blue.500" fontWeight="extrabold">
-              {golesLocal}
-            </Text>
-            <Text fontSize="4xl" fontWeight="extrabold" color="black">
-              :
-            </Text>
-            <Text fontSize="4xl" color="red.400" fontWeight="extrabold">
-              {golesVisitante}
+            <Flex align="center" gap={1}>
+              <Text fontSize="4xl" color="blue.500" fontWeight="extrabold">
+                {golesLocal}
+              </Text>
+              <Text fontSize="4xl" fontWeight="extrabold" color="black">
+                :
+              </Text>
+              <Text fontSize="4xl" color="red.400" fontWeight="extrabold">
+                {golesVisitante}
+              </Text>
+            </Flex>
+
+            <Text fontSize="2xl" fontWeight="bold" textTransform="uppercase">
+              {equipoRivalNombre}
             </Text>
           </Flex>
 
-          <Text fontSize="2xl" fontWeight="bold" textTransform="uppercase">
-            {equipoRivalNombre}
-          </Text>
-        </Flex>
-
-        {/* Play/Pause */}
-        <Flex
-          align="center"
-          justify="center"
-          boxSize={10}
-          bg={bloquearPlay ? "gray.400" : "#014C4C"}
-          borderRadius="full"
-          color="white"
-          cursor={bloquearPlay ? "not-allowed" : "pointer"}
-          opacity={bloquearPlay ? 0.5 : 1}
-          pointerEvents={bloquearPlay ? "none" : "auto"}
-          onClick={() => {
-            if (!bloquearPlay) {
-              setActivo(prev => !prev);
-            }
-          }}
-        >
-          <Icon as={activo ? FaPause : FaPlay} fontSize="md" />
-        </Flex>
-
-
-
-
-        {/* Tiempo y parte */}
-        <Flex direction="column" align="center">
-          <Text fontSize="sm">{parte}º Parte</Text>
-          <Text fontSize="xl" fontWeight="bold">{formatoTiempo()}</Text>
-        </Flex>
-
-        {/* Botón finalizar */}
-        {parte === 1 && (
-          <Button variant="outline" size="sm" onClick={handleFinalizarParte}>
-            Acabar Parte
-          </Button>
-        )}
-
-      </Flex>
-
-
-      <Flex flexWrap="wrap" gap={6}>
-        <Box minW="200px">
-          <Text fontWeight="bold" mb={1}>Porteros</Text>
-          
-          <SimpleGrid columns={2} spacing={2} mb={4}>
-            {convocados
-              .filter(jugador =>
-                jugador.posiciones?.some(pos => pos.nombre.toLowerCase() === "portero")
-              )
-              .map((jugador) => {
-                const isSelected = jugadorSeleccionado?.id === jugador.id;
-
-                return (
-                  <Button
-                    key={jugador.id}
-                    h="52px"
-                    px={2}
-                    fontSize="sm"
-                    bg={isSelected ? "teal.700" : "#014C4C"}
-                    color="white"
-                    border={isSelected ? "2px solid #319795" : "none"}
-                    _hover={{ bg: isSelected ? "teal.600" : "#016666" }}
-                    onClick={() => {
-                      if (jugadorSeleccionado?.id === jugador.id) {
-                        setJugadorSeleccionado(null);
-                      } else {
-                        setJugadorSeleccionado(jugador);
-                      }
-                    }}
-                    textAlign="center"
-                    whiteSpace="normal"
-                  >
-                    {jugador.dorsal} <br /> {jugador.nombre}
-                  </Button>
-                );
-              })}
-          </SimpleGrid>
-
-          {/* Título con icono de información */}
-          <Flex align="center" gap={2} mb={1}>
-            <Text fontWeight="bold">En Pista</Text>
-            <Tooltip 
-              label={
-                <Box>
-                  <Text><strong>Portero:</strong> <span style={{ color: '#014C4C' }}>verde oscuro</span></Text>
-                  <Text><strong>Central:</strong> <span style={{ color: '#3C3C8C' }}>azul oscuro</span></Text>
-                  <Text><strong>Lateral Izq.:</strong> <span style={{ color: '#059669' }}>verde</span></Text>
-                  <Text><strong>Lateral Der.:</strong> <span style={{ color: '#D97706' }}>naranja</span></Text>
-                  <Text><strong>Ext. Izq.:</strong> <span style={{ color: '#EC4899' }}>rosa</span></Text>
-                  <Text><strong>Ext. Der.:</strong> <span style={{ color: '#2563EB' }}>azul</span></Text>
-                  <Text><strong>Pivote:</strong> <span style={{ color: '#8C3C3C' }}>rojo</span></Text>
-                </Box>
+          {/* Play/Pause */}
+          <Flex
+            align="center"
+            justify="center"
+            boxSize={10}
+            bg={bloquearPlay ? "gray.400" : "#014C4C"}
+            borderRadius="full"
+            color="white"
+            cursor={bloquearPlay ? "not-allowed" : "pointer"}
+            opacity={bloquearPlay ? 0.5 : 1}
+            pointerEvents={bloquearPlay ? "none" : "auto"}
+            onClick={() => {
+              if (!bloquearPlay) {
+                setActivo(prev => !prev);
               }
-              fontSize="sm"
-              bg="white"
-              color="black"
-              p={3}
-              borderRadius="md"
-              boxShadow="md"
-              hasArrow
-              placement="right"
-            >
-              <Icon as={FaInfoCircle} boxSize={4} color="gray.500" cursor="pointer" onClick={abrirModalInfo} />
-            </Tooltip>
+            }}
+          >
+            <Icon as={activo ? FaPause : FaPlay} fontSize="md" />
           </Flex>
 
-          {/* Jugadores ordenados por posición */}
-          {(() => {
-            const ordenPosiciones = [
-              "central",
-              "lateral_izquierdo",
-              "lateral_derecho",
-              "extremo_izquierdo",
-              "extremo_derecho",
-              "pivote",
-              "defensa",
-              "sin_posicion"
-            ];
 
-            const jugadoresOrdenados = convocados
-              .filter(jugador =>
-                !jugador.posiciones?.some(pos => pos.nombre.toLowerCase() === "portero")
-              )
-              .slice()
-              .sort((a, b) => {
-                const posA = a.posiciones?.[0]?.nombre?.toLowerCase() || "sin_posicion";
-                const posB = b.posiciones?.[0]?.nombre?.toLowerCase() || "sin_posicion";
-                return ordenPosiciones.indexOf(posA) - ordenPosiciones.indexOf(posB);
-              });
 
-            return (
-              <SimpleGrid columns={3} spacing={2} mb={4}>
-                {jugadoresOrdenados.map((jugador) => {
+
+          {/* Tiempo y parte */}
+          <Flex direction="column" align="center">
+            <Text fontSize="sm">{parte}º Parte</Text>
+            <Text fontSize="xl" fontWeight="bold">{formatoTiempo()}</Text>
+          </Flex>
+
+          {/* Botón finalizar */}
+          {parte === 1 && (
+            <Button variant="outline" size="sm" onClick={handleFinalizarParte}>
+              Acabar Parte
+            </Button>
+          )}
+
+        </Flex>
+
+
+        <Flex flexWrap="wrap" gap={6}>
+          <Box minW="200px">
+            <Text fontWeight="bold" mb={1}>Porteros</Text>
+
+            <SimpleGrid columns={2} spacing={2} mb={4}>
+              {convocados
+                .filter(jugador =>
+                  jugador.posiciones?.some(pos => pos.nombre.toLowerCase() === "portero")
+                )
+                .map((jugador) => {
                   const isSelected = jugadorSeleccionado?.id === jugador.id;
-                  const posicion = jugador.posiciones?.[0]?.nombre?.toLowerCase() || "sin_posicion";
-                  const color = coloresPorPosicion[posicion] || "#014C4C";
 
                   return (
                     <Button
@@ -1089,10 +1009,10 @@ if (!partidoIniciado) {
                       h="52px"
                       px={2}
                       fontSize="sm"
-                      bg={isSelected ? "teal.700" : color}
+                      bg={isSelected ? "teal.700" : "#014C4C"}
                       color="white"
                       border={isSelected ? "2px solid #319795" : "none"}
-                      _hover={{ bg: isSelected ? "teal.600" : color }}
+                      _hover={{ bg: isSelected ? "teal.600" : "#016666" }}
                       onClick={() => {
                         if (jugadorSeleccionado?.id === jugador.id) {
                           setJugadorSeleccionado(null);
@@ -1107,363 +1027,448 @@ if (!partidoIniciado) {
                     </Button>
                   );
                 })}
-              </SimpleGrid>
-            );
-          })()}
+            </SimpleGrid>
+
+            {/* Título con icono de información */}
+            <Flex align="center" gap={2} mb={1}>
+              <Text fontWeight="bold">En Pista</Text>
+              <Tooltip
+                label={
+                  <Box>
+                    <Text><strong>Portero:</strong> <span style={{ color: '#014C4C' }}>verde oscuro</span></Text>
+                    <Text><strong>Central:</strong> <span style={{ color: '#3C3C8C' }}>azul oscuro</span></Text>
+                    <Text><strong>Lateral Izq.:</strong> <span style={{ color: '#059669' }}>verde</span></Text>
+                    <Text><strong>Lateral Der.:</strong> <span style={{ color: '#D97706' }}>naranja</span></Text>
+                    <Text><strong>Ext. Izq.:</strong> <span style={{ color: '#EC4899' }}>rosa</span></Text>
+                    <Text><strong>Ext. Der.:</strong> <span style={{ color: '#2563EB' }}>azul</span></Text>
+                    <Text><strong>Pivote:</strong> <span style={{ color: '#8C3C3C' }}>rojo</span></Text>
+                  </Box>
+                }
+                fontSize="sm"
+                bg="white"
+                color="black"
+                p={3}
+                borderRadius="md"
+                boxShadow="md"
+                hasArrow
+                placement="right"
+              >
+                <Icon as={FaInfoCircle} boxSize={4} color="gray.500" cursor="pointer" onClick={abrirModalInfo} />
+              </Tooltip>
+            </Flex>
+
+            {/* Jugadores ordenados por posición */}
+            {(() => {
+              const ordenPosiciones = [
+                "central",
+                "lateral_izquierdo",
+                "lateral_derecho",
+                "extremo_izquierdo",
+                "extremo_derecho",
+                "pivote",
+                "defensa",
+                "sin_posicion"
+              ];
+
+              const jugadoresOrdenados = convocados
+                .filter(jugador =>
+                  !jugador.posiciones?.some(pos => pos.nombre.toLowerCase() === "portero")
+                )
+                .slice()
+                .sort((a, b) => {
+                  const posA = a.posiciones?.[0]?.nombre?.toLowerCase() || "sin_posicion";
+                  const posB = b.posiciones?.[0]?.nombre?.toLowerCase() || "sin_posicion";
+                  return ordenPosiciones.indexOf(posA) - ordenPosiciones.indexOf(posB);
+                });
+
+              return (
+                <SimpleGrid columns={3} spacing={2} mb={4}>
+                  {jugadoresOrdenados.map((jugador) => {
+                    const isSelected = jugadorSeleccionado?.id === jugador.id;
+                    const posicion = jugador.posiciones?.[0]?.nombre?.toLowerCase() || "sin_posicion";
+                    const color = coloresPorPosicion[posicion] || "#014C4C";
+
+                    return (
+                      <Button
+                        key={jugador.id}
+                        h="52px"
+                        px={2}
+                        fontSize="sm"
+                        bg={isSelected ? "teal.700" : color}
+                        color="white"
+                        border={isSelected ? "2px solid #319795" : "none"}
+                        _hover={{ bg: isSelected ? "teal.600" : color }}
+                        onClick={() => {
+                          if (jugadorSeleccionado?.id === jugador.id) {
+                            setJugadorSeleccionado(null);
+                          } else {
+                            setJugadorSeleccionado(jugador);
+                          }
+                        }}
+                        textAlign="center"
+                        whiteSpace="normal"
+                      >
+                        {jugador.dorsal} <br /> {jugador.nombre}
+                      </Button>
+                    );
+                  })}
+                </SimpleGrid>
+              );
+            })()}
 
 
 
-          {/* Log de acciones abajo a la izquierda */}
-          <Text fontWeight="bold" mt={6} mb={2}>Últimas Acciones</Text>
-          <VStack align="stretch" spacing={1}>
-            {accionesRecientes.map((accion, i) => (
-              <Flex key={i} justify="space-between" align="center" p={2} borderWidth={1} borderRadius="md" bg="gray.50">
-                <Text fontSize="sm">
-                  <strong>{nombresLegibles[accion.tipo] || accion.tipo}</strong> - {accion.jugador}
-                </Text>
-                <Button
-                  size="xs"
-                  colorScheme="red"
-                  onClick={async () => {
-                    const confirmacion = await Swal.fire({
-                      title: "¿Eliminar acción?",
-                      text: "Esta acción se eliminará permanentemente",
-                      icon: "warning",
-                      showCancelButton: true,
-                      confirmButtonText: "Sí, eliminar",
-                      cancelButtonText: "Cancelar",
-                    });
-
-                    if (!confirmacion.isConfirmed) return;
-
-                    try {
-                      const token = localStorage.getItem("token");
-                      const res = await fetch(`https://myhandstats.onrender.com/accion_partido/${accion.id}`, {
-                        method: "DELETE",
-                        headers: {
-                          Authorization: `Bearer ${token}`,
-                        },
+            {/* Log de acciones abajo a la izquierda */}
+            <Text fontWeight="bold" mt={6} mb={2}>Últimas Acciones</Text>
+            <VStack align="stretch" spacing={1}>
+              {accionesRecientes.map((accion, i) => (
+                <Flex key={i} justify="space-between" align="center" p={2} borderWidth={1} borderRadius="md" bg="gray.50">
+                  <Text fontSize="sm">
+                    <strong>{nombresLegibles[accion.tipo] || accion.tipo}</strong> - {accion.jugador}
+                  </Text>
+                  <Button
+                    size="xs"
+                    colorScheme="red"
+                    onClick={async () => {
+                      const confirmacion = await Swal.fire({
+                        title: "¿Eliminar acción?",
+                        text: "Esta acción se eliminará permanentemente",
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonText: "Sí, eliminar",
+                        cancelButtonText: "Cancelar",
                       });
 
-                      if (!res.ok) {
-                        const data = await res.json();
-                        throw new Error(data.detail || "No se pudo eliminar la acción");
+                      if (!confirmacion.isConfirmed) return;
+
+                      try {
+                        const token = localStorage.getItem("token");
+                        const res = await fetch(`https://myhandstats.onrender.com/accion_partido/${accion.id}`, {
+                          method: "DELETE",
+                          headers: {
+                            Authorization: `Bearer ${token}`,
+                          },
+                        });
+
+                        if (!res.ok) {
+                          const data = await res.json();
+                          throw new Error(data.detail || "No se pudo eliminar la acción");
+                        }
+
+                        // 🧠 Ajuste del marcador al eliminar
+                        const tipo = accion.tipo.toLowerCase();
+                        if (tipo.includes("gol") && !tipo.includes("contra")) {
+                          setGolesLocal((prev) => Math.max(prev - 1, 0));
+                        } else if (tipo.includes("gol") && tipo.includes("contra")) {
+                          setGolesVisitante((prev) => Math.max(prev - 1, 0));
+                        }
+
+                        setAccionesRecientes((prev) => prev.filter((a) => a.id !== accion.id));
+                        Swal.fire("Eliminado", "La acción ha sido eliminada", "success");
+                      } catch (error) {
+                        console.error(error);
+                        Swal.fire("Error", error.message || "Error al eliminar la acción", "error");
                       }
+                    }}
 
-                      // 🧠 Ajuste del marcador al eliminar
-                      const tipo = accion.tipo.toLowerCase();
-                      if (tipo.includes("gol") && !tipo.includes("contra")) {
-                        setGolesLocal((prev) => Math.max(prev - 1, 0));
-                      } else if (tipo.includes("gol") && tipo.includes("contra")) {
-                        setGolesVisitante((prev) => Math.max(prev - 1, 0));
-                      }
+                  >
+                    X
+                  </Button>
 
-                      setAccionesRecientes((prev) => prev.filter((a) => a.id !== accion.id));
-                      Swal.fire("Eliminado", "La acción ha sido eliminada", "success");
-                    } catch (error) {
-                      console.error(error);
-                      Swal.fire("Error", error.message || "Error al eliminar la acción", "error");
-                    }
-                  }}
-
-                >
-                  X
-                </Button>
-
-              </Flex>
-            ))}
-          </VStack>
-
-        </Box>
-
-        <Box flex="1">
-          <Text fontWeight="bold" mb={2}>Fase del Juego</Text>
-          <Flex wrap="wrap" gap={2} mb={4}>
-            {fasesJuego.map((fase) => (
-              <Button
-                key={fase.id}
-                size="md"
-                h="44px"
-                variant={faseSeleccionada === fase.nombre ? "solid" : "outline"}
-                colorScheme={faseSeleccionada === fase.nombre ? "teal" : "gray"}
-                onClick={() => setFaseSeleccionada(fase.nombre)}
-              >
-                {fase.nombre}
-              </Button>
-            ))}
-          </Flex>
-
-          <Text fontWeight="bold" mb={2}>Acciones</Text>
-          {["ofensiva", "contra_ataque", "superioridad_ofensiva", "inferioridad_ofensiva"].includes(faseSeleccionada) && (
-            <Button
-              size="lg"
-              colorScheme="teal"
-              mb={3}
-              onClick={obtenerLanzamientos}
-            >
-              Ver Lanzamientos
-            </Button>   
-          )}
-
-          {["ofensiva", "contra_ataque", "superioridad_ofensiva", "inferioridad_ofensiva"].includes(faseSeleccionada) && (
-            <Button
-              size="lg"
-              colorScheme="teal"
-              mb={3}
-              ml={2}
-              onClick={obtenerGoles}
-            >
-              Ver Goles
-            </Button>
-          )}
-          
-          {["defensiva", "repliegue", "superioridad_defensiva", "inferioridad_defensiva\n"].includes(faseSeleccionada) && (
-            <>
-              <Button
-                size="lg"
-                colorScheme="red"
-                mb={3}
-                onClick={obtenerGolesEnContra}
-              >
-                Ver Goles en Contra
-              </Button>
-
-              <Button
-                size="lg"
-                colorScheme="red"
-                mb={3}
-                ml={2}
-                onClick={obtenerLanzamientosEnContra}
-              >
-                Ver Lanzamientos en Contra
-              </Button>
-            </>
-          )}
-
-
-
-          <SimpleGrid columns={[2, 3, 4]} spacingX={3} spacingY={4} mb={6}>
-          {accionesFiltradas
-            .filter((accion) =>
-              accion.tipo_accion !== "lanzamiento" && accion.tipo_accion !== "goles" && accion.tipo_accion !== "gol_en_contra" && accion.tipo_accion !== "lanzamiento_en_contra"
-            )
-            .map((accion) => (
-              <Button
-                key={accion.id}
-                size="sm"
-                variant="outline"
-                onClick={() => handleAccion(accion)}
-                whiteSpace="normal"
-                wordBreak="break-word"
-                textAlign="center"
-                px={2}
-                h="50px"
-                fontSize="sm"
-                lineHeight="1.2"
-              >
-                {nombresLegibles[accion.nombre] || accion.nombre.replaceAll("_", " ")}
-              </Button>
-          ))}
-
-
-          </SimpleGrid>
-
-          <Flex justify="flex-end">
-            <Button bg="#014C4C" color="white" _hover={{ bg: '#016666' }} onClick={handleFinalizarPartido}>
-              Finalizar Partido
-            </Button>
-          </Flex>
-        </Box>
-      </Flex>
-
-      <Modal isOpen={isLanzamientoOpen} onClose={onLanzamientoClose} size="3xl" isCentered>
-        <ModalOverlay />
-        <ModalContent>
-        <ModalHeader textAlign="center" bg="#014C4C" color="white">
-          Lanzamientos disponibles
-          {jugadorSeleccionado && (
-            <Text fontSize="sm" fontWeight="normal" color="white" mt={1}>
-              {jugadorSeleccionado.dorsal} - {jugadorSeleccionado.nombre}
-            </Text>
-          )}
-        </ModalHeader>
-
-        <ModalBody>
-          <SimpleGrid columns={[2, 3, 4]} spacingX={3} spacingY={4} mb={6}>
-            {lanzamientos.map((accion) => (
-              <Button
-                key={accion.id}
-                size="sm"
-                variant="outline"
-                onClick={() => handleAccion(accion)}
-                whiteSpace="normal"
-                wordBreak="break-word"
-                textAlign="center"
-                px={2}
-                h="50px"
-                fontSize="sm"
-                lineHeight="1.2"
-              >
-                {nombresLegibles[accion.nombre] || accion.nombre.replaceAll("_", " ")}
-              </Button>
-            ))}
-          </SimpleGrid>
-        </ModalBody>
-
-          <ModalFooter>
-            <Button onClick={onLanzamientoClose}>Cerrar</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-
-      <Modal isOpen={isGolesOpen} onClose={onGolesClose} size="3xl" isCentered>
-        <ModalOverlay />
-        <ModalContent>
-        <ModalHeader textAlign="center" bg="#014C4C" color="white">
-          Goles disponibles
-          {jugadorSeleccionado && (
-            <Text fontSize="sm" fontWeight="normal" color="white" mt={1}>
-              {jugadorSeleccionado.dorsal} - {jugadorSeleccionado.nombre}
-            </Text>
-          )}
-        </ModalHeader>
-
-          <ModalBody>
-            <SimpleGrid columns={[2, 3, 4]} spacing={3}>
-              {goles.map((accion) => (
-              <Button
-                key={accion.id}
-                size="md"
-                variant="outline"
-                bg="white"
-                _hover={{ bg: "gray.100" }}
-                _active={{ bg: "white", transform: "none" }}
-                _focus={{ boxShadow: "none", bg: "white" }}
-                onClick={() => {
-                  handleAccion(accion);
-                  onGolesClose();
-                }}
-                whiteSpace="normal"
-                wordBreak="break-word"
-                textAlign="center"
-                px={2}
-                h="50px"
-                fontSize="sm"
-                lineHeight="1.2"
-              >
-                {nombresLegibles[accion.nombre] || accion.nombre.replaceAll("_", " ")}
-              </Button>
-              ))}
-            </SimpleGrid>
-          </ModalBody>
-          <ModalFooter>
-            <Button onClick={onGolesClose}>Cerrar</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-
-      <Modal isOpen={isGolesContraOpen} onClose={onGolesContraClose} size="3xl" isCentered>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader textAlign="center" bg="red.500" color="white">
-            Goles en Contra
-          </ModalHeader>
-          <ModalBody>
-            <SimpleGrid columns={[2, 3, 4]} spacing={3}>
-              {golesEnContra.map((accion) => (
-              <Button
-                key={accion.id}
-                size="sm"
-                variant="outline"
-                bg="white"
-                _hover={{ bg: "gray.100" }}
-                onClick={() => {
-                  handleAccion(accion);
-                  onGolesContraClose();
-                }}
-                whiteSpace="normal"
-                wordBreak="break-word"
-                textAlign="center"
-                px={2}
-                h="50px"
-                fontSize="sm"
-                lineHeight="1.2"
-              >
-                {nombresLegibles[accion.nombre] || accion.nombre.replaceAll("_", " ")}
-              </Button>
-              ))}
-            </SimpleGrid>
-          </ModalBody>
-          <ModalFooter>
-            <Button onClick={onGolesContraClose}>Cerrar</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-
-      <Modal isOpen={isLanzamientosContraOpen} onClose={onLanzamientosContraClose} size="3xl" isCentered>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader textAlign="center" bg="red.500" color="white">
-            Lanzamientos en Contra
-            {jugadorSeleccionado && (
-              <Text fontSize="sm" fontWeight="normal" color="white" mt={1}>
-                {jugadorSeleccionado.dorsal} – {jugadorSeleccionado.nombre}
-              </Text>
-            )}
-          </ModalHeader>
-          <ModalBody>
-            <SimpleGrid columns={[2, 3, 4]} spacing={4} mb={6}>
-              {lanzamientosEnContra.map((accion) => (
-                <Button
-                  key={accion.id}
-                  size="sm"
-                  variant="outline"
-                  bg="white"
-                  _hover={{ bg: "gray.100" }}
-                  whiteSpace="normal"         
-                  wordBreak="break-word"       
-                  textAlign="center"
-                  px={1}                      
-                  py={7}                        
-                  m={1}                         
-                  onClick={() => {
-                    handleAccion(accion);
-                    onLanzamientosContraClose();
-                  }}
-                >
-                {nombresLegibles[accion.nombre] || accion.nombre.replaceAll("_", " ")}
-
-                </Button>
-              ))}
-            </SimpleGrid>
-          </ModalBody>
-          <ModalFooter>
-            <Button onClick={onLanzamientosContraClose}>Cerrar</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-
-      <Modal isOpen={modalInfoOpen} onClose={cerrarModalInfo} isCentered>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader textAlign="center">Colores por Posición</ModalHeader>
-          <ModalBody>
-            <VStack align="start" spacing={2}>
-              {Object.entries(coloresPorPosicion).map(([pos, color]) => (
-                <Flex key={pos} align="center" gap={3}>
-                  <Box w="20px" h="20px" bg={color} borderRadius="full" />
-                  <Text textTransform="capitalize">{pos.replaceAll('_', ' ')}</Text>
                 </Flex>
               ))}
             </VStack>
-          </ModalBody>
-          <ModalFooter>
-            <Button onClick={cerrarModalInfo}>Cerrar</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
 
-    </Box>
+          </Box>
+
+          <Box flex="1">
+            <Text fontWeight="bold" mb={2}>Fase del Juego</Text>
+            <Flex wrap="wrap" gap={2} mb={4}>
+              {fasesJuego.map((fase) => (
+                <Button
+                  key={fase.id}
+                  size="md"
+                  h="44px"
+                  variant={faseSeleccionada === fase.nombre ? "solid" : "outline"}
+                  colorScheme={faseSeleccionada === fase.nombre ? "teal" : "gray"}
+                  onClick={() => setFaseSeleccionada(fase.nombre)}
+                >
+                  {fase.nombre}
+                </Button>
+              ))}
+            </Flex>
+
+            <Text fontWeight="bold" mb={2}>Acciones</Text>
+            {["ofensiva", "contra_ataque", "superioridad_ofensiva", "inferioridad_ofensiva"].includes(faseSeleccionada) && (
+              <Button
+                size="lg"
+                colorScheme="teal"
+                mb={3}
+                onClick={obtenerLanzamientos}
+              >
+                Ver Lanzamientos
+              </Button>
+            )}
+
+            {["ofensiva", "contra_ataque", "superioridad_ofensiva", "inferioridad_ofensiva"].includes(faseSeleccionada) && (
+              <Button
+                size="lg"
+                colorScheme="teal"
+                mb={3}
+                ml={2}
+                onClick={obtenerGoles}
+              >
+                Ver Goles
+              </Button>
+            )}
+
+            {["defensiva", "repliegue", "superioridad_defensiva", "inferioridad_defensiva\n"].includes(faseSeleccionada) && (
+              <>
+                <Button
+                  size="lg"
+                  colorScheme="red"
+                  mb={3}
+                  onClick={obtenerGolesEnContra}
+                >
+                  Ver Goles en Contra
+                </Button>
+
+                <Button
+                  size="lg"
+                  colorScheme="red"
+                  mb={3}
+                  ml={2}
+                  onClick={obtenerLanzamientosEnContra}
+                >
+                  Ver Lanzamientos en Contra
+                </Button>
+              </>
+            )}
+
+
+
+            <SimpleGrid columns={[2, 3, 4]} spacingX={3} spacingY={4} mb={6}>
+              {accionesFiltradas
+                .filter((accion) =>
+                  accion.tipo_accion !== "lanzamiento" && accion.tipo_accion !== "goles" && accion.tipo_accion !== "gol_en_contra" && accion.tipo_accion !== "lanzamiento_en_contra"
+                )
+                .map((accion) => (
+                  <Button
+                    key={accion.id}
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleAccion(accion)}
+                    whiteSpace="normal"
+                    wordBreak="break-word"
+                    textAlign="center"
+                    px={2}
+                    h="50px"
+                    fontSize="sm"
+                    lineHeight="1.2"
+                  >
+                    {nombresLegibles[accion.nombre] || accion.nombre.replaceAll("_", " ")}
+                  </Button>
+                ))}
+
+
+            </SimpleGrid>
+
+            <Flex justify="flex-end">
+              <Button bg="#014C4C" color="white" _hover={{ bg: '#016666' }} onClick={handleFinalizarPartido}>
+                Finalizar Partido
+              </Button>
+            </Flex>
+          </Box>
+        </Flex>
+
+        <Modal isOpen={isLanzamientoOpen} onClose={onLanzamientoClose} size="3xl" isCentered>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader textAlign="center" bg="#014C4C" color="white">
+              Lanzamientos disponibles
+              {jugadorSeleccionado && (
+                <Text fontSize="sm" fontWeight="normal" color="white" mt={1}>
+                  {jugadorSeleccionado.dorsal} - {jugadorSeleccionado.nombre}
+                </Text>
+              )}
+            </ModalHeader>
+
+            <ModalBody>
+              <SimpleGrid columns={[2, 3, 4]} spacingX={3} spacingY={4} mb={6}>
+                {lanzamientos.map((accion) => (
+                  <Button
+                    key={accion.id}
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleAccion(accion)}
+                    whiteSpace="normal"
+                    wordBreak="break-word"
+                    textAlign="center"
+                    px={2}
+                    h="50px"
+                    fontSize="sm"
+                    lineHeight="1.2"
+                  >
+                    {nombresLegibles[accion.nombre] || accion.nombre.replaceAll("_", " ")}
+                  </Button>
+                ))}
+              </SimpleGrid>
+            </ModalBody>
+
+            <ModalFooter>
+              <Button onClick={onLanzamientoClose}>Cerrar</Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+
+        <Modal isOpen={isGolesOpen} onClose={onGolesClose} size="3xl" isCentered>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader textAlign="center" bg="#014C4C" color="white">
+              Goles disponibles
+              {jugadorSeleccionado && (
+                <Text fontSize="sm" fontWeight="normal" color="white" mt={1}>
+                  {jugadorSeleccionado.dorsal} - {jugadorSeleccionado.nombre}
+                </Text>
+              )}
+            </ModalHeader>
+
+            <ModalBody>
+              <SimpleGrid columns={[2, 3, 4]} spacing={3}>
+                {goles.map((accion) => (
+                  <Button
+                    key={accion.id}
+                    size="md"
+                    variant="outline"
+                    bg="white"
+                    _hover={{ bg: "gray.100" }}
+                    _active={{ bg: "white", transform: "none" }}
+                    _focus={{ boxShadow: "none", bg: "white" }}
+                    onClick={() => {
+                      handleAccion(accion);
+                      onGolesClose();
+                    }}
+                    whiteSpace="normal"
+                    wordBreak="break-word"
+                    textAlign="center"
+                    px={2}
+                    h="50px"
+                    fontSize="sm"
+                    lineHeight="1.2"
+                  >
+                    {nombresLegibles[accion.nombre] || accion.nombre.replaceAll("_", " ")}
+                  </Button>
+                ))}
+              </SimpleGrid>
+            </ModalBody>
+            <ModalFooter>
+              <Button onClick={onGolesClose}>Cerrar</Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+
+        <Modal isOpen={isGolesContraOpen} onClose={onGolesContraClose} size="3xl" isCentered>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader textAlign="center" bg="red.500" color="white">
+              Goles en Contra
+            </ModalHeader>
+            <ModalBody>
+              <SimpleGrid columns={[2, 3, 4]} spacing={3}>
+                {golesEnContra.map((accion) => (
+                  <Button
+                    key={accion.id}
+                    size="sm"
+                    variant="outline"
+                    bg="white"
+                    _hover={{ bg: "gray.100" }}
+                    onClick={() => {
+                      handleAccion(accion);
+                      onGolesContraClose();
+                    }}
+                    whiteSpace="normal"
+                    wordBreak="break-word"
+                    textAlign="center"
+                    px={2}
+                    h="50px"
+                    fontSize="sm"
+                    lineHeight="1.2"
+                  >
+                    {nombresLegibles[accion.nombre] || accion.nombre.replaceAll("_", " ")}
+                  </Button>
+                ))}
+              </SimpleGrid>
+            </ModalBody>
+            <ModalFooter>
+              <Button onClick={onGolesContraClose}>Cerrar</Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+
+        <Modal isOpen={isLanzamientosContraOpen} onClose={onLanzamientosContraClose} size="3xl" isCentered>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader textAlign="center" bg="red.500" color="white">
+              Lanzamientos en Contra
+              {jugadorSeleccionado && (
+                <Text fontSize="sm" fontWeight="normal" color="white" mt={1}>
+                  {jugadorSeleccionado.dorsal} – {jugadorSeleccionado.nombre}
+                </Text>
+              )}
+            </ModalHeader>
+            <ModalBody>
+              <SimpleGrid columns={[2, 3, 4]} spacing={4} mb={6}>
+                {lanzamientosEnContra.map((accion) => (
+                  <Button
+                    key={accion.id}
+                    size="sm"
+                    variant="outline"
+                    bg="white"
+                    _hover={{ bg: "gray.100" }}
+                    whiteSpace="normal"
+                    wordBreak="break-word"
+                    textAlign="center"
+                    px={1}
+                    py={7}
+                    m={1}
+                    onClick={() => {
+                      handleAccion(accion);
+                      onLanzamientosContraClose();
+                    }}
+                  >
+                    {nombresLegibles[accion.nombre] || accion.nombre.replaceAll("_", " ")}
+
+                  </Button>
+                ))}
+              </SimpleGrid>
+            </ModalBody>
+            <ModalFooter>
+              <Button onClick={onLanzamientosContraClose}>Cerrar</Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+
+        <Modal isOpen={modalInfoOpen} onClose={cerrarModalInfo} isCentered>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader textAlign="center">Colores por Posición</ModalHeader>
+            <ModalBody>
+              <VStack align="start" spacing={2}>
+                {Object.entries(coloresPorPosicion).map(([pos, color]) => (
+                  <Flex key={pos} align="center" gap={3}>
+                    <Box w="20px" h="20px" bg={color} borderRadius="full" />
+                    <Text textTransform="capitalize">{pos.replaceAll('_', ' ')}</Text>
+                  </Flex>
+                ))}
+              </VStack>
+            </ModalBody>
+            <ModalFooter>
+              <Button onClick={cerrarModalInfo}>Cerrar</Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+
+      </Box>
     </>
   );
 };
